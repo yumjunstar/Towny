@@ -52,7 +52,7 @@ public class TownyVehicleListener implements Listener {
 				break;
 			
 			case MINECART_FURNACE:
-				vehicle = Material.FURNACE_MINECART;
+				vehicle = Material.POWERED_MINECART;
 				break;
 			
 			case MINECART_HOPPER:
@@ -60,7 +60,7 @@ public class TownyVehicleListener implements Listener {
 				break;
 				
 			case MINECART_CHEST:
-				vehicle = Material.CHEST_MINECART;
+				vehicle = Material.STORAGE_MINECART;
 				break;
 				
 			case MINECART_MOB_SPAWNER:
@@ -68,11 +68,11 @@ public class TownyVehicleListener implements Listener {
 				break;
 			
 			case MINECART_COMMAND:
-				vehicle = Material.COMMAND_BLOCK_MINECART;
+				vehicle = Material.COMMAND_MINECART;
 				break;
 			
 			case MINECART_TNT:
-				vehicle = Material.TNT_MINECART;
+				vehicle = Material.EXPLOSIVE_MINECART;
 				break;
 				
 			default:

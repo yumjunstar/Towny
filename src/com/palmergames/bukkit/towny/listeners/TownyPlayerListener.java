@@ -42,11 +42,10 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.Tag;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.block.data.type.Sign;
-import org.bukkit.block.data.type.WallSign;
+import org.bukkit.material.Door;
+import org.bukkit.material.Sign;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
@@ -69,7 +68,6 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
-import org.bukkit.event.player.PlayerTakeLecternBookEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.inventory.EquipmentSlot;
@@ -242,6 +240,7 @@ public class TownyPlayerListener implements Listener {
 	*  item use check,
 	*  switch use check
 	*/
+	@SuppressWarnings("deprecation")
 	@EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
 	public void onPlayerInteract(PlayerInteractEvent event) {
 
@@ -269,7 +268,7 @@ public class TownyPlayerListener implements Listener {
 		// prevent players trampling crops
 
 		if ((event.getAction() == Action.PHYSICAL)) {
-			if ((block.getType() == Material.FARMLAND))				
+			if ((block.getType() == Material.SOIL))				
 				if (World.isDisablePlayerTrample() || !PlayerCacheUtil.getCachePermission(player, block.getLocation(), block.getType(), TownyPermission.ActionType.DESTROY)) {
 					event.setCancelled(true);
 					return;
@@ -288,35 +287,47 @@ public class TownyPlayerListener implements Listener {
 
 						block = event.getClickedBlock();
 						
-						if (Tag.SIGNS.isTagged(block.getType())) {
-							BlockFace facing = null;
-							if (block.getBlockData() instanceof Sign) {
-								org.bukkit.block.data.type.Sign sign = (org.bukkit.block.data.type.Sign) block.getBlockData();
-								facing = sign.getRotation();
-							}
-							if (block.getBlockData() instanceof WallSign)  { 
-								org.bukkit.block.data.type.WallSign sign = (org.bukkit.block.data.type.WallSign) block.getBlockData();
-								facing = sign.getFacing();	
-							}
+						if (block.getState().getData() instanceof Sign) {
+							Sign sign = (Sign) block.getState().getData();
+							BlockFace facing = sign.getFacing();
+							BlockFace attachedFace = sign.getAttachedFace();
+							
 							TownyMessaging.sendMessage(player, Arrays.asList(
 									ChatTools.formatTitle("Sign Info"),
 									ChatTools.formatCommand("", "Sign Type", "", block.getType().name()),
-									ChatTools.formatCommand("", "Facing", "", facing.toString())
+									ChatTools.formatCommand("", "Facing", "", facing.toString()),
+									ChatTools.formatCommand("", "AttachedFace", "", attachedFace.toString())
 									));
-						} else if (Tag.DOORS.isTagged(block.getType())) {
-							org.bukkit.block.data.type.Door door = (org.bukkit.block.data.type.Door) block.getBlockData();
+						} else if (block.getState().getData() instanceof Door) {
+							Door door = (Door) block.getState().getData();
+							BlockFace face = null;
+							boolean isOpen = false;
+							boolean isHinge = false;
+							if (door.isTopHalf()) {
+								isHinge = door.getHinge();
+								Door otherdoor = (Door) block.getRelative(BlockFace.DOWN).getState().getData();
+								isOpen = otherdoor.isOpen();
+								face = otherdoor.getFacing();										
+							} else {
+								isOpen = door.isOpen();
+								face = door.getFacing();
+								Door otherdoor = (Door) block.getRelative(BlockFace.UP).getState().getData();
+								isHinge=otherdoor.getHinge();
+							}
+							
 							TownyMessaging.sendMessage(player, Arrays.asList(
 									ChatTools.formatTitle("Door Info"),
 									ChatTools.formatCommand("", "Door Type", "", block.getType().name()),
-									ChatTools.formatCommand("", "hinged on ", "", String.valueOf(door.getHinge())),
-									ChatTools.formatCommand("", "isOpen", "", String.valueOf(door.isOpen())),
-									ChatTools.formatCommand("", "getFacing", "", door.getFacing().name())
-									));
+									ChatTools.formatCommand("", "isHingedOnRight", "", String.valueOf(isHinge)),
+									ChatTools.formatCommand("", "isOpen", "", String.valueOf(isOpen)),
+									ChatTools.formatCommand("", "getFacing", "", face.toString()),									
+									ChatTools.formatCommand("", "Old Data value", "", Byte.toString(BukkitTools.getData(block)))
+									));							
 						} else {
 							TownyMessaging.sendMessage(player, Arrays.asList(
 									ChatTools.formatTitle("Block Info"),
 									ChatTools.formatCommand("", "Material", "", block.getType().name()),								      
-									ChatTools.formatCommand("", "MaterialData", "", block.getBlockData().getAsString())
+									ChatTools.formatCommand("", "MaterialData", "", block.getType().getData().toString())
 									));
 						}
 						event.setUseInteractedBlock(Event.Result.DENY);
@@ -471,15 +482,15 @@ public class TownyPlayerListener implements Listener {
 					break;
 					
 				case MINECART_CHEST:
-					block = Material.CHEST_MINECART;
+					block = Material.STORAGE_MINECART;
 					break;
 					
 				case MINECART_FURNACE:
-					block = Material.FURNACE_MINECART;
+					block = Material.POWERED_MINECART;
 					break;
 				
 				case MINECART_COMMAND:
-					block = Material.COMMAND_BLOCK_MINECART;
+					block = Material.COMMAND_MINECART;
 					break;
 					
 				case MINECART_HOPPER:
@@ -487,7 +498,7 @@ public class TownyPlayerListener implements Listener {
 					break;
 					
 				case MINECART_TNT:
-					block = Material.TNT_MINECART;
+					block = Material.EXPLOSIVE_MINECART;
 					break;
 			}
 			
@@ -1036,29 +1047,6 @@ public class TownyPlayerListener implements Listener {
 		}		
 	}
 	
-	/**
-	 * Any player that can break the lectern will be able to get the book anyways.
-	 * @param event - PlayerTakeLecternBookEvent
-	 */
-	@EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
-	public void onPlayerTakeLecternBookEvent(PlayerTakeLecternBookEvent event) {
-		
-		if (plugin.isError()) {
-			event.setCancelled(true);
-			return;
-		}
-
-		if (!TownyAPI.getInstance().isTownyWorld(event.getLectern().getWorld()))
-			return;
-		
-		Player player = event.getPlayer();
-		org.bukkit.block.Lectern lectern = event.getLectern();
-		Location location = lectern.getLocation();
-		
-		boolean bDestroy = PlayerCacheUtil.getCachePermission(player, location, Material.LECTERN, ActionType.DESTROY);
-		event.setCancelled(!bDestroy);
-	}
-
 	/**
 	 * Blocks jailed players using blacklisted commands.
 	 * @param event - PlayerCommandPreprocessEvent

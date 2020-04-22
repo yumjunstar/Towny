@@ -98,7 +98,7 @@ public class TownyEntityListener implements Listener {
 			if (CombatUtil.preventDamageCall(plugin, attacker, defender)) {
 				// Remove the projectile here so no
 				// other events can fire to cause damage
-				if (attacker instanceof Projectile && !attacker.getType().equals(EntityType.TRIDENT))
+				if (attacker instanceof Projectile)
 					attacker.remove();
 
 				event.setCancelled(true);
@@ -600,7 +600,7 @@ public class TownyEntityListener implements Listener {
 			TownyWorld townyWorld = townyUniverse.getDataSource().getWorld(block.getLocation().getWorld().getName());
 			// Prevent creatures trampling crops
 			if (townyWorld.isDisableCreatureTrample()) {
-				if ((block.getType() == Material.FARMLAND) || (block.getType() == Material.WHEAT)) {
+				if ((block.getType() == Material.SOIL) || (block.getType() == Material.CROPS)) {
 					if (entity instanceof Creature) {
 						event.setCancelled(true);
 						return;
@@ -635,7 +635,7 @@ public class TownyEntityListener implements Listener {
 
 			// Prevent creatures triggering stone pressure plates
 			if (TownySettings.isCreatureTriggeringPressurePlateDisabled()) {
-				if (block.getType() == Material.STONE_PRESSURE_PLATE) {
+				if (block.getType() == Material.STONE_PLATE) {
 					if (entity instanceof Creature) {
 						event.setCancelled(true);
 						return;

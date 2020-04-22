@@ -11,6 +11,7 @@ import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Server;
 import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.scheduler.BukkitScheduler;
@@ -231,5 +232,42 @@ public class BukkitTools {
 			return false;
 		}
 
+	}
+
+	@Deprecated
+	public static int getTypeId(Block block) {
+		return block.getTypeId();
+	}
+	
+	@Deprecated
+	public static byte getData(Block block) {
+		return block.getData();
+	}
+	
+	@Deprecated
+	public static void setTypeIdAndData(Block block, int type, byte data, boolean applyPhysics) {
+		block.setTypeIdAndData(type, data, applyPhysics);
+	}
+	
+	@Deprecated
+	public static void setTypeId(Block block, int type, boolean applyPhysics) {
+		block.setTypeId(type, applyPhysics);
+	}
+	
+	@Deprecated
+	public static void setData(Block block, byte data, boolean applyPhysics) {
+		block.setData(data, applyPhysics);
+	}
+	
+	/**
+	 * Get the Id (magic number) of a Material type.
+	 * 
+	 * @param material
+	 * @return
+	 */
+	@SuppressWarnings("deprecation")
+	public static int getMaterialId(Material material) {
+		
+		return material.getId();
 	}
 }

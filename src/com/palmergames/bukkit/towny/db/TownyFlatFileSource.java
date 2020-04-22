@@ -39,6 +39,7 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -2274,39 +2275,47 @@ public final class TownyFlatFileSource extends TownyDatabaseHandler {
 
 		FileMgmt.checkOrCreateFolder(dataFolderPath + File.separator + "plot-block-data" + File.separator + plotChunk.getWorldName());
         
-        String path = getPlotFilename(plotChunk);
-        try (DataOutputStream fout = new DataOutputStream(new FileOutputStream(path))) {
-            
-            switch (plotChunk.getVersion()) {
-                
-                case 1:
-                case 2:
-                case 3:
-                case 4:
-                    /*
-                     * New system requires pushing
-                     * version data first
-                     */
-                    fout.write("VER".getBytes(StandardCharsets.UTF_8));
-                    fout.write(plotChunk.getVersion());
-                    
-                    break;
-                
-                default:
-                
-            }
-            
-            // Push the plot height, then the plot block data types.
-            fout.writeInt(plotChunk.getHeight());
-            for (String block : new ArrayList<>(plotChunk.getBlockList())) {
-                fout.writeUTF(block);
-            }
-            
-        } catch (Exception e) {
-            TownyMessaging.sendErrorMsg("Saving Error: Exception while saving PlotBlockData file (" + path + ")");
-            e.printStackTrace();
-            return false;
-        }
+		DataOutputStream fout = null;
+		String path = getPlotFilename(plotChunk);
+
+		try {
+			fout = new DataOutputStream(new FileOutputStream(path));
+
+			switch (plotChunk.getVersion()) {
+
+			case 1:
+			case 2:
+				/*
+				 * New system requires pushing
+				 * version data first
+				 */
+				fout.write("VER".getBytes(Charset.forName("UTF-8")));
+				fout.write(plotChunk.getVersion());
+
+				break;
+
+			default:
+
+			}
+
+			// Push the plot height, then the plot block data types.
+			fout.writeInt(plotChunk.getHeight());
+			for (int block : new ArrayList<>(plotChunk.getBlockList())) {
+				fout.writeInt(block);
+			}
+
+		} catch (Exception e) {
+			TownyMessaging.sendErrorMsg("Saving Error: Exception while saving PlotBlockData file (" + path + ")");
+			e.printStackTrace();
+			return false;
+		} finally {
+			if (fout != null) {
+				try {
+					fout.close();
+				} catch (IOException ignore) {
+				}
+			}
+		}
 		return true;
 
 	}
@@ -2341,85 +2350,95 @@ public final class TownyFlatFileSource extends TownyDatabaseHandler {
 	 * @return PlotBlockData or null
 	 */
     @Override
-    public PlotBlockData loadPlotData(TownBlock townBlock) {
-        
-        String fileName = getPlotFilename(townBlock);
-        
-        String value;
-        
-        if (isFile(fileName)) {
-            PlotBlockData plotBlockData = new PlotBlockData(townBlock);
-            List<String> blockArr = new ArrayList<>();
-            int version = 0;
-            
-            try (DataInputStream fin = new DataInputStream(new FileInputStream(fileName))) {
-                
-                //read the first 3 characters to test for version info
-                fin.mark(3);
-                byte[] key = new byte[3];
-                fin.read(key, 0, 3);
-                String test = new String(key);
-                
-                if (elements.fromString(test) == elements.VER) {// Read the file version
-                    version = fin.read();
-                    plotBlockData.setVersion(version);
-                    
-                    // next entry is the plot height
-                    plotBlockData.setHeight(fin.readInt());
-                } else {
-                    /*
-                     * no version field so set height
-                     * and push rest to queue
-                     */
-                    plotBlockData.setVersion(version);
-                    // First entry is the plot height
-                    fin.reset();
-                    plotBlockData.setHeight(fin.readInt());
-                    blockArr.add(fin.readUTF());
-                    blockArr.add(fin.readUTF());
-                }
-                
-                /*
-                 * Load plot block data based upon the stored version number.
-                 */
-                switch (version) {
-                    
-                    default:
-                    case 4:
-                    case 3:
-                    case 1:
-                        
-                        // load remainder of file
-                        while ((value = fin.readUTF()) != null) {
-                            blockArr.add(value);
-                        }
-                        
-                        break;
-                    
-                    case 2: {
-                        
-                        // load remainder of file
-                        int temp = 0;
-                        while ((temp = fin.readInt()) >= 0) {
-                            blockArr.add(temp + "");
-                        }
-                        
-                        break;
-                    }
-                }
-                
-                
-            } catch (EOFException ignored) {
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            
-            plotBlockData.setBlockList(blockArr);
-            plotBlockData.resetBlockListRestored();
-            return plotBlockData;
-        }
-        return null;
-    }
+	public PlotBlockData loadPlotData(TownBlock townBlock) {
+
+		String fileName = getPlotFilename(townBlock);
+
+		int value;
+
+		if (isFile(fileName)) {
+			PlotBlockData plotBlockData = new PlotBlockData(townBlock);
+			List<Integer> IntArr = new ArrayList<>();
+			int version = 0;
+
+			DataInputStream fin = null;
+
+			try {
+				fin = new DataInputStream(new FileInputStream(fileName));
+
+				//read the first 3 characters to test for version info
+				byte[] key = new byte[3];
+				fin.read(key, 0, 3);
+				String test = new String(key);
+
+				switch (elements.fromString(test)) {
+
+				case VER:
+					// Read the file version
+					version = fin.read();
+					plotBlockData.setVersion(version);
+
+					// next entry is the plot height
+					plotBlockData.setHeight(fin.readInt());
+					break;
+
+				default:
+					/*
+					 * no version field so set height
+					 * and push rest to queue
+					 */
+					plotBlockData.setVersion(version);
+					// First entry is the plot height
+					plotBlockData.setHeight(key[0]);
+					IntArr.add((int) key[1]);
+					IntArr.add((int) key[2]);
+				}
+
+				/*
+				 * Load plot block data based upon the stored version number.
+				 */
+				switch (version) {
+
+				default:
+				case 1:
+
+					// load remainder of file
+					while ((value = fin.read()) >= 0) {
+						IntArr.add(value);
+					}
+
+					break;
+
+				case 2:
+
+					// load remainder of file
+					while ((value = fin.readInt()) >= 0) {
+						IntArr.add(value);
+					}
+
+					break;
+
+				}
+
+
+			} catch (EOFException e) {
+			} catch (IOException e) {
+				e.printStackTrace();
+			} finally {
+				if (fin != null) {
+					try {
+						fin.close();
+					} catch (IOException ignore) {
+					}
+				}
+			}
+
+			plotBlockData.setBlockList(IntArr);
+			plotBlockData.resetBlockListRestored();
+			return plotBlockData;
+		}
+		return null;
+	}
     
     @Override
 	public void deletePlotData(PlotBlockData plotChunk) {
