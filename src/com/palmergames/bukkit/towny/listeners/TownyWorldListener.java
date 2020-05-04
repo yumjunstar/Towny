@@ -175,5 +175,4 @@ public class TownyWorldListener implements Listener {
 		if (!removed.isEmpty())
 			event.getBlocks().removeAll(removed);
 	}
-
 }

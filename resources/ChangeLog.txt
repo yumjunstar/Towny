@@ -4512,3 +4512,47 @@ v0.92.0.11:
   - Clickable navigation arrows on /n list and /t list pages, courtesy of Siris with PR #3937.
     - Requires using Spigot or Paper or equivalent.
     - Closes #3853.
+  - Make sure clickable texts are using the full command and not shortened versions.
+  - pt-br.yml updated to 0.82 courtesy of vsdepontes with PR #3930.
+  - Fix nations being able to kick towns from their nation during war.
+    - To prevent nations not having to defend all of their towns in war.
+  - Fix non-warring Towns from still being able to be considered as attackers in Event war.
+  - Fix flying players being able to count as townblock attackers/defenders in Event war.
+  - Fix resident's Town and Nation ranks being able to double up, which caused rare issues with TownyNameUpdater.
+    - Also catching the ConcurrentModificationException if it does somehow occur again.
+    - Closes #3912.
+  - REQUIRED CHANGE: at protection.item_use_ids
+    - add ,DIAMOND_AXE,GOLDEN_AXE,IRON_AXE,WOODEN_AXE,STONE_AXE
+    - will prevent players from stripping logs in unwanted locations.
+0.96.1.8:
+  - Add Essentials to soft-depends.
+  - Fix movement-cancels-spawning showing cancel message when because you waited patiently and spawned.
+  - Fix out-dated comments in config re: spawning costs.
+  - French.yml updated to 0.82, courtesy of Yldales with PR #3958.
+  - Allow TownyMessaging to use more than 54 characters per line, courtesy of v3Monsta with PR #3946.
+0.96.1.9:
+  - Fix missing command-feedback when using some towny commands in the console, courtesy of Siris with PR #3961.
+    - Closes #3957. 
+  - Fix newly-joined players not having their lastOnline value not set.
+  - Fix residents.txt causing safemode for having a resident listed more than once.
+    - Also removes doubled up residents from the residents.txt when saving.
+  - New Permission Node: towny.admin.spawn
+    - Grants admin spawn priviledges, without cooldowns/warmups/spawncosts.
+    - Child Node: towny.command.townyadmin.town.spawn.freecharge
+    - Is itself a childnode of towny.admin.
+    - Closes: #3936.
+  - Removed Permission Nodes: 
+    - towny.command.townyadmin.town.spawn
+    - towny.command.townyadmin.nation.spawn
+    - Replaced by the above towny.admin.spawn node.
+  - Fix min_distance_between_homeblocks likely not working very well.
+  - Changed: towns in the same nation now bypass the min_distance_from_town_homeblock & min_plot_distance_from_town_plot config values.
+    - Allows for nations to connect seamlessly while still keeping towns not in the same nation from claiming close to each other.
+    - Closes #3913.
+  - Fix DrawSmokeFactory offset to move smoke puffs up from inside the blocks.
+  - Fix ghost townblocks that are missing a town not being deleted at startup.
+0.96.1.10:
+  - Changed: Whether someone light a Nether Portal, they will now have to be able to build NETHER_PORTAL blocks rather than OBSIDIAN blocks.
+    - This means that servers who want players to be able to make nether portals to a world where they do not grant towny.wild permissions will be able to build a portal.
+    - The node required to build a portal that would connect into the wilderness would be towny.wild.build.NETHER_PORTAL.
+    - This means servers that do not grant wild permissions do not have to give towny.wild.build.OBSIDIAN, which would mean players could place obsidian anywhere in the wild.
