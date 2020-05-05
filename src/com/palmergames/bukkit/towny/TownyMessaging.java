@@ -665,11 +665,6 @@ public class TownyMessaging {
 
 	public static void sendConfirmationMessage(CommandSender sender, String firstline, String confirmline, String cancelline, String lastline) {
 		
-		if (Towny.isSpigot && sender instanceof Player) {
-			TownySpigotMessaging.sendSpigotConfirmMessage(sender, firstline, confirmline, cancelline, lastline);
-			return;
-		}
-		
 		if (firstline == null) {
 			firstline = TownySettings.getLangString("confirmation_prefix") + TownySettings.getLangString("are_you_sure_you_want_to_continue");
 		}
@@ -694,11 +689,6 @@ public class TownyMessaging {
 	
 
 	public static void sendRequestMessage(CommandSender player, Invite invite) {
-		
-		if (Towny.isSpigot) {
-			TownySpigotMessaging.sendSpigotRequestMessage(player, invite);
-			return;
-		}
 		
 		if (invite.getSender() instanceof Town) { // Town invited Resident
 			String firstline = TownySettings.getLangString("invitation_prefix") + String.format(TownySettings.getLangString("you_have_been_invited_to_join2"), invite.getSender().getName());
