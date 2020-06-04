@@ -141,7 +141,8 @@ public class TownCommand extends BaseCommand implements CommandExecutor, TabComp
 		"embassyprice",
 		"embassytax",
 		"title",
-		"surname"
+		"surname",
+		"taxpercentcap"
 	);
 
 	static final List<String> townToggleTabCompletes = Arrays.asList(
@@ -491,13 +492,16 @@ public class TownCommand extends BaseCommand implements CommandExecutor, TabComp
 
 				if (!townyUniverse.getPermissionSource().testPermission(player, PermissionNodes.TOWNY_COMMAND_TOWN_NEW.getNode()))
 					throw new TownyException(TownySettings.getLangString("msg_err_command_disable"));
+				
+				boolean noCharge = TownySettings.getNewTownPrice() == 0.0 || !TownySettings.isUsingEconomy();
 
 				if (split.length == 1) {
 					throw new TownyException(TownySettings.getLangString("msg_specify_name"));
 				} else if (split.length >= 2) {
 					String[] newSplit = StringMgmt.remFirstArg(split);
 					String townName = String.join("_", newSplit);
-					newTown(player, townName, player.getName(), false);			
+					
+					newTown(player, townName, player.getName(), noCharge);
 				}
 
 			} else if (split[0].equalsIgnoreCase("leave")) {
@@ -1439,26 +1443,26 @@ public class TownCommand extends BaseCommand implements CommandExecutor, TabComp
 		player.sendMessage(ChatTools.formatCommand(TownySettings.getLangString("mayor_sing"), "/town", "delete", ""));
 	}
 
-	public static void townToggle(Player player, String[] split, boolean admin, Town town) throws TownyException {
+	public static void townToggle(CommandSender sender, String[] split, boolean admin, Town town) throws TownyException {
 		TownyUniverse townyUniverse = TownyUniverse.getInstance();
 
 		if (split.length == 0) {
-			player.sendMessage(ChatTools.formatTitle("/town toggle"));
-			player.sendMessage(ChatTools.formatCommand("", "/town toggle", "pvp", ""));
-			player.sendMessage(ChatTools.formatCommand("", "/town toggle", "public", ""));
-			player.sendMessage(ChatTools.formatCommand("", "/town toggle", "explosion", ""));
-			player.sendMessage(ChatTools.formatCommand("", "/town toggle", "fire", ""));
-			player.sendMessage(ChatTools.formatCommand("", "/town toggle", "mobs", ""));
-			player.sendMessage(ChatTools.formatCommand("", "/town toggle", "taxpercent", ""));
-			player.sendMessage(ChatTools.formatCommand("", "/town toggle", "open", ""));
-			player.sendMessage(ChatTools.formatCommand("", "/town toggle", "jail [number] [resident]", ""));
+			sender.sendMessage(ChatTools.formatTitle("/town toggle"));
+			sender.sendMessage(ChatTools.formatCommand("", "/town toggle", "pvp", ""));
+			sender.sendMessage(ChatTools.formatCommand("", "/town toggle", "public", ""));
+			sender.sendMessage(ChatTools.formatCommand("", "/town toggle", "explosion", ""));
+			sender.sendMessage(ChatTools.formatCommand("", "/town toggle", "fire", ""));
+			sender.sendMessage(ChatTools.formatCommand("", "/town toggle", "mobs", ""));
+			sender.sendMessage(ChatTools.formatCommand("", "/town toggle", "taxpercent", ""));
+			sender.sendMessage(ChatTools.formatCommand("", "/town toggle", "open", ""));
+			sender.sendMessage(ChatTools.formatCommand("", "/town toggle", "jail [number] [resident]", ""));
 		} else {
 			Resident resident;
 
 			try {
 				
 				if (!admin) {
-					resident = townyUniverse.getDataSource().getResident(player.getName());
+					resident = townyUniverse.getDataSource().getResident(sender.getName());
 					town = resident.getTown();
 				} else { // Admin actions will be carried out as the mayor of the town for the purposes of some tests.
 					resident = town.getMayor();
@@ -1468,22 +1472,25 @@ public class TownCommand extends BaseCommand implements CommandExecutor, TabComp
 				throw new TownyException(x.getMessage());
 			}
 
-			if (!townyUniverse.getPermissionSource().testPermission(player, PermissionNodes.TOWNY_COMMAND_TOWN_TOGGLE.getNode(split[0].toLowerCase())))
+			if (!admin && !townyUniverse.getPermissionSource().testPermission((Player) sender, PermissionNodes.TOWNY_COMMAND_TOWN_TOGGLE.getNode(split[0].toLowerCase())))
 				throw new TownyException(TownySettings.getLangString("msg_err_command_disable"));
 
 			if (split[0].equalsIgnoreCase("public")) {
 
 				town.setPublic(!town.isPublic());
 				TownyMessaging.sendPrefixedTownMessage(town, String.format(TownySettings.getLangString("msg_changed_public"), town.isPublic() ? TownySettings.getLangString("enabled") : TownySettings.getLangString("disabled")));
+				if (admin)
+					TownyMessaging.sendMsg(sender, String.format(TownySettings.getLangString("msg_changed_public"), town.isPublic() ? TownySettings.getLangString("enabled") : TownySettings.getLangString("disabled")));
 
 			} else if (split[0].equalsIgnoreCase("pvp")) {
 				// Make sure we are allowed to set these permissions.
-				toggleTest(player, town, StringMgmt.join(split, " "));
+				if (!admin) {
+					toggleTest((Player) sender, town, StringMgmt.join(split, " "));
 				
-				// Test to see if the pvp cooldown timer is active for the town.
-				if (TownySettings.getPVPCoolDownTime() > 0 && !admin && CooldownTimerTask.hasCooldown(town.getName(), CooldownType.PVP) && !townyUniverse.getPermissionSource().testPermission(player, PermissionNodes.TOWNY_ADMIN.getNode()))					 
-					throw new TownyException(String.format(TownySettings.getLangString("msg_err_cannot_toggle_pvp_x_seconds_remaining"), CooldownTimerTask.getCooldownRemaining(town.getName(), CooldownType.PVP)));
-				
+					// Test to see if the pvp cooldown timer is active for the town.
+					if (TownySettings.getPVPCoolDownTime() > 0 && !admin && CooldownTimerTask.hasCooldown(town.getName(), CooldownType.PVP) && !townyUniverse.getPermissionSource().testPermission((Player) sender, PermissionNodes.TOWNY_ADMIN.getNode()))					 
+						throw new TownyException(String.format(TownySettings.getLangString("msg_err_cannot_toggle_pvp_x_seconds_remaining"), CooldownTimerTask.getCooldownRemaining(town.getName(), CooldownType.PVP)));
+				}
 				boolean outsiderintown = false;
 				if (TownySettings.getOutsidersPreventPVPToggle()) {
 					for (Player target : Bukkit.getOnlinePlayers()) {
@@ -1502,37 +1509,52 @@ public class TownCommand extends BaseCommand implements CommandExecutor, TabComp
 				if (!outsiderintown) {
 					town.setPVP(!town.isPVP());
 					// Add a cooldown to PVP toggling.
-					if (TownySettings.getPVPCoolDownTime() > 0 && !admin && !townyUniverse.getPermissionSource().testPermission(player, PermissionNodes.TOWNY_ADMIN.getNode()))
+					if (TownySettings.getPVPCoolDownTime() > 0 && !admin && !townyUniverse.getPermissionSource().testPermission((Player) sender, PermissionNodes.TOWNY_ADMIN.getNode()))
 						CooldownTimerTask.addCooldownTimer(town.getName(), CooldownType.PVP);
 					TownyMessaging.sendPrefixedTownMessage(town, String.format(TownySettings.getLangString("msg_changed_pvp"), town.getName(), town.isPVP() ? TownySettings.getLangString("enabled") : TownySettings.getLangString("disabled")));
+					if (admin)
+						TownyMessaging.sendMsg(sender, String.format(TownySettings.getLangString("msg_changed_pvp"), town.getName(), town.isPVP() ? TownySettings.getLangString("enabled") : TownySettings.getLangString("disabled")));
 				} else if (outsiderintown) {
 					throw new TownyException(TownySettings.getLangString("msg_cant_toggle_pvp_outsider_in_town"));
 				}
 			} else if (split[0].equalsIgnoreCase("explosion")) {
 				// Make sure we are allowed to set these permissions.
-				toggleTest(player, town, StringMgmt.join(split, " "));
+				if (!admin)
+					toggleTest((Player) sender, town, StringMgmt.join(split, " "));
 				town.setBANG(!town.isBANG());
 				TownyMessaging.sendPrefixedTownMessage(town, String.format(TownySettings.getLangString("msg_changed_expl"), town.getName(), town.isBANG() ? TownySettings.getLangString("enabled") : TownySettings.getLangString("disabled")));
+				if (admin)
+					TownyMessaging.sendMsg(sender, String.format(TownySettings.getLangString("msg_changed_expl"), town.getName(), town.isBANG() ? TownySettings.getLangString("enabled") : TownySettings.getLangString("disabled")));
 
 			} else if (split[0].equalsIgnoreCase("fire")) {
 				// Make sure we are allowed to set these permissions.
-				toggleTest(player, town, StringMgmt.join(split, " "));
+				if (!admin)
+					toggleTest((Player) sender, town, StringMgmt.join(split, " "));
 				town.setFire(!town.isFire());
 				TownyMessaging.sendPrefixedTownMessage(town, String.format(TownySettings.getLangString("msg_changed_fire"), town.getName(), town.isFire() ? TownySettings.getLangString("enabled") : TownySettings.getLangString("disabled")));
+				if (admin)
+					TownyMessaging.sendMsg(sender, String.format(TownySettings.getLangString("msg_changed_fire"), town.getName(), town.isFire() ? TownySettings.getLangString("enabled") : TownySettings.getLangString("disabled")));
 
 			} else if (split[0].equalsIgnoreCase("mobs")) {
 				// Make sure we are allowed to set these permissions.
-				toggleTest(player, town, StringMgmt.join(split, " "));
+				if (!admin)
+					toggleTest((Player) sender, town, StringMgmt.join(split, " "));
 				town.setHasMobs(!town.hasMobs());
 				TownyMessaging.sendPrefixedTownMessage(town, String.format(TownySettings.getLangString("msg_changed_mobs"), town.getName(), town.hasMobs() ? TownySettings.getLangString("enabled") : TownySettings.getLangString("disabled")));
+				if (admin)
+					TownyMessaging.sendMsg(sender, String.format(TownySettings.getLangString("msg_changed_mobs"), town.getName(), town.hasMobs() ? TownySettings.getLangString("enabled") : TownySettings.getLangString("disabled")));
 
 			} else if (split[0].equalsIgnoreCase("taxpercent")) {
 				town.setTaxPercentage(!town.isTaxPercentage());
 				TownyMessaging.sendPrefixedTownMessage(town, String.format(TownySettings.getLangString("msg_changed_taxpercent"), town.isTaxPercentage() ? TownySettings.getLangString("enabled") : TownySettings.getLangString("disabled")));
+				if (admin)
+					TownyMessaging.sendMsg(sender, String.format(TownySettings.getLangString("msg_changed_taxpercent"), town.isTaxPercentage() ? TownySettings.getLangString("enabled") : TownySettings.getLangString("disabled")));
 			} else if (split[0].equalsIgnoreCase("open")) {
 
 				town.setOpen(!town.isOpen());
 				TownyMessaging.sendPrefixedTownMessage(town, String.format(TownySettings.getLangString("msg_changed_open"), town.isOpen() ? TownySettings.getLangString("enabled") : TownySettings.getLangString("disabled")));
+				if (admin)
+					TownyMessaging.sendMsg(sender, String.format(TownySettings.getLangString("msg_changed_open"), town.isOpen() ? TownySettings.getLangString("enabled") : TownySettings.getLangString("disabled")));
 
 				// Send a warning when toggling on (a reminder about plot
 				// permissions).
@@ -1545,9 +1567,9 @@ public class TownCommand extends BaseCommand implements CommandExecutor, TabComp
 
 				Integer index, days;
 				if (split.length <= 2) {
-					player.sendMessage(ChatTools.formatTitle("/town toggle jail"));
-					player.sendMessage(ChatTools.formatCommand("", "/town toggle jail", "[number] [resident]", ""));
-					player.sendMessage(ChatTools.formatCommand("", "/town toggle jail", "[number] [resident] [days]", ""));
+					sender.sendMessage(ChatTools.formatTitle("/town toggle jail"));
+					sender.sendMessage(ChatTools.formatCommand("", "/town toggle jail", "[number] [resident]", ""));
+					sender.sendMessage(ChatTools.formatCommand("", "/town toggle jail", "[number] [resident] [days]", ""));
 
 				} else if (split.length > 2) {
 					try {
@@ -1560,7 +1582,7 @@ public class TownCommand extends BaseCommand implements CommandExecutor, TabComp
 						} else
 							days = 0;
 						Resident jailedresident = townyUniverse.getDataSource().getResident(split[2]);
-						if (!player.hasPermission("towny.command.town.toggle.jail"))
+						if (!admin && !((Player) sender).hasPermission("towny.command.town.toggle.jail")) 
 							throw new TownyException(TownySettings.getLangString("msg_no_permission_to_jail_your_residents"));
 						if (!jailedresident.hasTown())
 							if (!jailedresident.isJailed())
@@ -1571,12 +1593,12 @@ public class TownCommand extends BaseCommand implements CommandExecutor, TabComp
 							if (jailedresident.isJailed() && index != jailedresident.getJailSpawn())
 								index = jailedresident.getJailSpawn();
 
-							Player jailedplayer = TownyAPI.getInstance().getPlayer(jailedresident);
-							if (jailedplayer == null) {
+							Player jailedPlayer = TownyAPI.getInstance().getPlayer(jailedresident);
+							if (jailedPlayer == null) {
 								throw new TownyException(String.format(TownySettings.getLangString("msg_player_is_not_online"), jailedresident.getName()));
 							}
 							Town sendertown = resident.getTown();
-							if (jailedplayer.getUniqueId().equals(player.getUniqueId()))
+							if (!admin && jailedPlayer.getUniqueId().equals(((Player) sender).getUniqueId()))
 								throw new TownyException(TownySettings.getLangString("msg_no_self_jailing"));
 
 							if (jailedresident.isJailed()) {
@@ -1584,7 +1606,9 @@ public class TownCommand extends BaseCommand implements CommandExecutor, TabComp
 								if (jailTown != sendertown) {
 									throw new TownyException(TownySettings.getLangString("msg_player_not_jailed_in_your_town"));
 								} else {
-									jailedresident.setJailedByMayor(jailedplayer, index, sendertown, days);
+									jailedresident.setJailedByMayor(jailedPlayer, index, sendertown, days);
+									if (admin)
+										TownyMessaging.sendMsg(sender, String.format(TownySettings.getLangString("msg_player_has_been_sent_to_jail_number"), jailedPlayer.getName(), index));
 									return;
 
 								}
@@ -1593,16 +1617,18 @@ public class TownCommand extends BaseCommand implements CommandExecutor, TabComp
 							if (jailedresident.getTown() != sendertown)
 								throw new TownyException(TownySettings.getLangString("msg_resident_not_your_town"));
 
-							jailedresident.setJailedByMayor(jailedplayer, index, sendertown, days);
+							jailedresident.setJailedByMayor(jailedPlayer, index, sendertown, days);
+							if (admin)
+								TownyMessaging.sendMsg(sender, String.format(TownySettings.getLangString("msg_player_has_been_sent_to_jail_number"), jailedPlayer.getName(), index));
 
 						} catch (NotRegisteredException x) {
 							throw new TownyException(String.format(TownySettings.getLangString("msg_err_not_registered_1"), split[0]));
 						}
 
 					} catch (NumberFormatException e) {
-						player.sendMessage(ChatTools.formatTitle("/town toggle jail"));
-						player.sendMessage(ChatTools.formatCommand("", "/town toggle jail", "[number] [resident]", ""));
-						player.sendMessage(ChatTools.formatCommand("", "/town toggle jail", "[number] [resident] [days]", ""));
+						sender.sendMessage(ChatTools.formatTitle("/town toggle jail"));
+						sender.sendMessage(ChatTools.formatCommand("", "/town toggle jail", "[number] [resident]", ""));
+						sender.sendMessage(ChatTools.formatCommand("", "/town toggle jail", "[number] [resident] [days]", ""));
 						return;
 					} catch (NullPointerException e) {
 						e.printStackTrace();
@@ -1777,6 +1803,7 @@ public class TownCommand extends BaseCommand implements CommandExecutor, TabComp
 			player.sendMessage(ChatTools.formatCommand("", "/town set", "name [name]", ""));
 			player.sendMessage(ChatTools.formatCommand("", "/town set", "tag [upto 4 letters] or clear", ""));
 			player.sendMessage(ChatTools.formatCommand("", "/town set", "title/surname [resident] [text]", ""));
+			player.sendMessage(ChatTools.formatCommand("", "/town set", "taxpercentcap [amount]", ""));
 		} else {
 			Resident resident;
 
@@ -1812,6 +1839,9 @@ public class TownCommand extends BaseCommand implements CommandExecutor, TabComp
 						TownyMessaging.sendErrorMsg(player, TownySettings.getLangString("msg_err_invalid_string_board_not_set"));
 						return;
 					}
+					// TownyFormatter shouldn't be given any string longer than 159, or it has trouble splitting lines.
+					if (line.length() > 159)
+						line = line.substring(0, 159);
 
 					town.setTownBoard(line);
 					TownyMessaging.sendTownBoard(player, town);
@@ -1851,6 +1881,25 @@ public class TownCommand extends BaseCommand implements CommandExecutor, TabComp
 				else
 					TownyMessaging.sendPrefixedTownMessage(town, String.format(TownySettings.getLangString("msg_clear_title_surname"), "Title", resident.getName()));
 
+			} else if (split[0].equalsIgnoreCase("taxpercentcap")) {
+				if (!townyUniverse.getPermissionSource().testPermission(player, PermissionNodes.TOWNY_COMMAND_TOWN_SET_TAXPERCENTCAP.getNode()))
+					throw new TownyException(TownySettings.getLangString("msg_err_command_disable"));
+				
+				if (!town.isTaxPercentage()) {
+					// msg_max_tax_amount_only_for_percent
+					throw new TownyException(TownySettings.getLangString("msg_max_tax_amount_only_for_percent"));
+				}
+				
+				if (split.length < 2) {
+					TownyMessaging.sendErrorMsg("Eg. /town set taxMax 10000");
+					return;
+				}
+				
+				double amount = Double.parseDouble(split[1]);
+				town.setMaxPercentTaxAmount(amount);
+
+				TownyMessaging.sendPrefixedTownMessage(town, String.format(TownySettings.getLangString("msg_town_set_tax_max_percent_amount"), player.getName(), TownyEconomyHandler.getFormattedBalance(town.getMaxPercentTaxAmount())));
+				
 			} else if (split[0].equalsIgnoreCase("surname")) {
 
 				if (!townyUniverse.getPermissionSource().testPermission(player, PermissionNodes.TOWNY_COMMAND_TOWN_SET_SURNAME.getNode()))
@@ -1912,8 +1961,8 @@ public class TownCommand extends BaseCommand implements CommandExecutor, TabComp
 							plugin.deleteCache(oldMayor);
 							plugin.deleteCache(newMayor.getName());
 							if (admin)
-								TownyMessaging.sendMessage(player, TownySettings.getNewMayorMsg(newMayor.getName()));
-							TownyMessaging.sendPrefixedTownMessage(town, TownySettings.getNewMayorMsg(newMayor.getName()));
+								TownyMessaging.sendMessage(player, String.format(TownySettings.getLangString("msg_new_mayor"),newMayor.getName()));
+							TownyMessaging.sendPrefixedTownMessage(town, String.format(TownySettings.getLangString("msg_new_mayor"),newMayor.getName()));
 						} catch (TownyException e) {
 							TownyMessaging.sendErrorMsg(player, e.getMessage());
 							return;
@@ -2463,7 +2512,7 @@ public class TownCommand extends BaseCommand implements CommandExecutor, TabComp
 			if (TownySettings.getMaxDistanceBetweenHomeblocks() > 0)
 				if ((world.getMinDistanceFromOtherTowns(key) > TownySettings.getMaxDistanceBetweenHomeblocks()) && world.hasTowns())
 					throw new TownyException(TownySettings.getLangString("msg_too_far"));
-			
+
 			// If the town isn't free to make, send a confirmation.
 			if (!noCharge && TownySettings.isUsingEconomy()) { 
 				// Test if the resident can afford the town.
@@ -2484,7 +2533,7 @@ public class TownCommand extends BaseCommand implements CommandExecutor, TabComp
 						TownyMessaging.sendErrorMsg(player, e.getMessage());
 						e.printStackTrace();
 					}
-					TownyMessaging.sendGlobalMessage(TownySettings.getNewTownMsg(player.getName(), StringMgmt.remUnderscore(name)));
+					TownyMessaging.sendGlobalMessage(String.format(TownySettings.getLangString("msg_new_town"), player.getName(), StringMgmt.remUnderscore(name)));
 				});
 				// Send confirmation.
 				confirmation.setTitle(String.format(TownySettings.getLangString("msg_confirm_purchase"), TownyEconomyHandler.getFormattedBalance(TownySettings.getNewTownPrice())));
@@ -2493,7 +2542,7 @@ public class TownCommand extends BaseCommand implements CommandExecutor, TabComp
 			// Or, if the town doesn't cost money to create, just make the Town.
 			} else {
 				newTown(world, name, resident, key, player.getLocation(), player);
-				TownyMessaging.sendGlobalMessage(TownySettings.getNewTownMsg(player.getName(), StringMgmt.remUnderscore(name)));
+				TownyMessaging.sendGlobalMessage(String.format(TownySettings.getLangString("msg_new_town"), player.getName(), StringMgmt.remUnderscore(name)));
 			}
 		} catch (TownyException x) {
 			TownyMessaging.sendErrorMsg(player, x.getMessage());
@@ -2665,6 +2714,7 @@ public class TownCommand extends BaseCommand implements CommandExecutor, TabComp
 	 * @param player - Player.
 	 * @param split  - Current command arguments.
 	 * @param outpost - Whether this in an outpost or not.
+	 * @param ignoreWarning - Whether to ignore cost warning and pay automatically.
 	 * @throws TownyException - Exception.
 	 */
 	public static void townSpawn(Player player, String[] split, Boolean outpost, boolean ignoreWarning) throws TownyException{
@@ -3314,14 +3364,18 @@ public class TownCommand extends BaseCommand implements CommandExecutor, TabComp
 				}
 			}
 
-			// Propagate perms to all unchanged, town owned, townblocks
+			// Propagate perms to all unchanged townblocks
 			for (TownBlock townBlock : townBlockOwner.getTownBlocks()) {
 				if ((townBlockOwner instanceof Town) && (!townBlock.hasResident())) {
 					if (!townBlock.isChanged()) {
 						townBlock.setType(townBlock.getType());
 						townyUniverse.getDataSource().saveTownBlock(townBlock);
 					}
-				}
+				} else if (townBlockOwner instanceof Resident)
+					if (!townBlock.isChanged()) {
+						townBlock.setType(townBlock.getType());
+						townyUniverse.getDataSource().saveTownBlock(townBlock);
+					}
 			}
 
 			TownyMessaging.sendMsg(player, TownySettings.getLangString("msg_set_perms"));

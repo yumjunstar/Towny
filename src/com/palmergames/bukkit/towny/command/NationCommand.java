@@ -543,9 +543,11 @@ public class NationCommand extends BaseCommand implements CommandExecutor {
 					if (!resident.isMayor() && !resident.getTown().hasAssistant(resident))
 						throw new TownyException(TownySettings.getLangString("msg_peasant_right"));
 					
+					boolean noCharge = TownySettings.getNewNationPrice() == 0.0 || !TownySettings.isUsingEconomy();
+					
 					String[] newSplit = StringMgmt.remFirstArg(split);
 					String nationName = String.join("_", newSplit);
-					newNation(player, nationName, resident.getTown().getName(), false);
+					newNation(player, nationName, resident.getTown().getName(), noCharge);
 
 				}
 			} else if (split[0].equalsIgnoreCase("join")) {
@@ -1331,7 +1333,7 @@ public class NationCommand extends BaseCommand implements CommandExecutor {
 					} catch (AlreadyRegisteredException | NotRegisteredException e) {
 						TownyMessaging.sendErrorMsg(player, e.getMessage());
 					}
-					TownyMessaging.sendGlobalMessage(TownySettings.getNewNationMsg(player.getName(), StringMgmt.remUnderscore(name)));
+					TownyMessaging.sendGlobalMessage(String.format(TownySettings.getLangString("msg_new_nation"), player.getName(), StringMgmt.remUnderscore(name)));
 
 				});
 				// Send confirmation.
@@ -1340,7 +1342,7 @@ public class NationCommand extends BaseCommand implements CommandExecutor {
 			// Or, it is free, so just make the nation.
 			} else {
 				newNation(name, town);
-				TownyMessaging.sendGlobalMessage(TownySettings.getNewNationMsg(player.getName(), StringMgmt.remUnderscore(name)));
+				TownyMessaging.sendGlobalMessage(String.format(TownySettings.getLangString("msg_new_nation"), player.getName(), StringMgmt.remUnderscore(name)));
 			}
 		} catch (TownyException | EconomyException x) {
 			TownyMessaging.sendErrorMsg(player, x.getMessage());
@@ -1721,10 +1723,10 @@ public class NationCommand extends BaseCommand implements CommandExecutor {
 			return;
 		}
 
-		nationKick(player, resident, nation, townyUniverse.getDataSource().getTowns(names));
+		nationKick(player, nation, townyUniverse.getDataSource().getTowns(names));
 	}
 
-	public void nationKick(Player player, Resident resident, Nation nation, List<Town> kicking) {
+	public static void nationKick(CommandSender sender, Nation nation, List<Town> kicking) {
 		TownyUniverse townyUniverse = TownyUniverse.getInstance();
 
 		ArrayList<Town> remove = new ArrayList<>();
@@ -1766,17 +1768,17 @@ public class NationCommand extends BaseCommand implements CommandExecutor {
 			for (Town town : kicking) {
 				msg.append(town.getName()).append(", ");
 
-				TownyMessaging.sendPrefixedTownMessage(town, String.format(TownySettings.getLangString("msg_nation_kicked_by"), player.getName()));
+				TownyMessaging.sendPrefixedTownMessage(town, String.format(TownySettings.getLangString("msg_nation_kicked_by"), sender.getName()));
 			}
 
 			msg = new StringBuilder(msg.substring(0, msg.length() - 2));
-			msg = new StringBuilder(String.format(TownySettings.getLangString("msg_nation_kicked"), player.getName(), msg.toString()));
+			msg = new StringBuilder(String.format(TownySettings.getLangString("msg_nation_kicked"), sender.getName(), msg.toString()));
 			TownyMessaging.sendPrefixedNationMessage(nation, msg.toString());
 			townyUniverse.getDataSource().saveNation(nation);
 
 			plugin.resetCache();
 		} else
-			TownyMessaging.sendErrorMsg(player, TownySettings.getLangString("msg_invalid_name"));
+			TownyMessaging.sendErrorMsg(sender, TownySettings.getLangString("msg_invalid_name"));
 	}
 
 	private void nationAlly(Player player, String[] split) throws TownyException {
@@ -2327,7 +2329,7 @@ public class NationCommand extends BaseCommand implements CommandExecutor {
 						nation.setKing(newKing);
 						plugin.deleteCache(oldKingsName);
 						plugin.deleteCache(newKing.getName());
-						TownyMessaging.sendPrefixedNationMessage(nation, TownySettings.getNewKingMsg(newKing.getName(), nation.getName()));
+						TownyMessaging.sendPrefixedNationMessage(nation, String.format(TownySettings.getLangString("msg_new_king"), newKing.getName(), nation.getName()));
 					} catch (TownyException e) {
 						TownyMessaging.sendErrorMsg(player, e.getMessage());
 					}
@@ -2359,7 +2361,7 @@ public class NationCommand extends BaseCommand implements CommandExecutor {
 										finalNation.setCapital(newCapital);										
 										finalNation.recheckTownDistance();
 										plugin.resetCache();
-										TownyMessaging.sendPrefixedNationMessage(finalNation, TownySettings.getNewKingMsg(newCapital.getMayor().getName(), finalNation.getName()));
+										TownyMessaging.sendPrefixedNationMessage(finalNation, String.format(TownySettings.getLangString("msg_new_king"), newCapital.getMayor().getName(), finalNation.getName()));
 										
 									} catch (TownyException e) {
 										TownyMessaging.sendErrorMsg(player, e.getMessage());
@@ -2374,14 +2376,14 @@ public class NationCommand extends BaseCommand implements CommandExecutor {
 							} else {
 								nation.setCapital(newCapital);
 								plugin.resetCache();
-								TownyMessaging.sendPrefixedNationMessage(nation, TownySettings.getNewKingMsg(newCapital.getMayor().getName(), nation.getName()));
+								TownyMessaging.sendPrefixedNationMessage(nation, String.format(TownySettings.getLangString("msg_new_king"), newCapital.getMayor().getName(), nation.getName()));
 								TownyUniverse.getInstance().getDataSource().saveNation(nation);
 							}
 						// Proximity doesn't factor in.
 						} else {
 							nation.setCapital(newCapital);
 							plugin.resetCache();
-							TownyMessaging.sendPrefixedNationMessage(nation, TownySettings.getNewKingMsg(newCapital.getMayor().getName(), nation.getName()));
+							TownyMessaging.sendPrefixedNationMessage(nation, String.format(TownySettings.getLangString("msg_new_king"),newCapital.getMayor().getName(), nation.getName()));
 							TownyUniverse.getInstance().getDataSource().saveNation(nation);
 						}
 					}
@@ -2588,6 +2590,9 @@ public class NationCommand extends BaseCommand implements CommandExecutor {
 						TownyMessaging.sendErrorMsg(player, TownySettings.getLangString("msg_err_invalid_string_nationboard_not_set"));
 						return;
 					}
+					// TownyFormatter shouldn't be given any string longer than 159, or it has trouble splitting lines.
+					if (line.length() > 159)
+						line = line.substring(0, 159);
 
 					nation.setNationBoard(line);
 					TownyMessaging.sendNationBoard(player, nation);

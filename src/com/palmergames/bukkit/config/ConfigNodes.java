@@ -78,7 +78,7 @@ public enum ConfigNodes {
 			"# Default amount for town's plottax costs."),
 	TOWN_DEF_TAXES_TAXPERCENTAGE(
 			"town.default_taxes.taxpercentage",
-			"false",
+			"true",
 			"# Default status of new town's taxpercentage. True means that the default_tax is treated as a percentage instead of a fixed amount."),
 	TOWN_DEF_TAXES_MINIMUMTAX(
 			"town.default_taxes.minimumtax",
@@ -109,6 +109,12 @@ public enum ConfigNodes {
 			"town.town_limit",
 			"3000",
 			"# Maximum number of towns allowed on the server."),
+	TOWN_MIN_DISTANCE_IGNORED_FOR_NATIONS(
+			"town.min_distances_ignored_for_towns_in_same_nation",
+			"true",
+			"",
+			"# If true, the below settings: min_plot_distance_from_town_plot and min_distance_from_town_homeblock",
+			"# will be ignored for towns that are in the same nation. Setting to false will keep all towns separated the same."),
 	TOWN_MIN_PLOT_DISTANCE_FROM_TOWN_PLOT(
 			"town.min_plot_distance_from_town_plot",
 			"5",
@@ -747,16 +753,16 @@ public enum ConfigNodes {
 			"# Regex fields used in validating inputs."),
 	FILTERS_REGEX_NAME_FILTER_REGEX(
 			"filters_colour_chat.regex.name_filter_regex",
-			"[ /]"),
+			"[\\\\\\/]"),
 	FILTERS_REGEX_NAME_CHECK_REGEX(
 			"filters_colour_chat.regex.name_check_regex",
-			"^[\\P{M}\\p{M}*+a-zA-Z0-9._\\[\\]-]*$"),
+			"^[\\p{L}a-zA-Z0-9._\\[\\]-]*$"),
 	FILTERS_REGEX_STRING_CHECK_REGEX(
 			"filters_colour_chat.regex.string_check_regex",
 			"^[a-zA-Z0-9 \\s._\\[\\]\\#\\?\\!\\@\\$\\%\\^\\&\\*\\-\\,\\*\\(\\)\\{\\}]*$"),
 	FILTERS_REGEX_NAME_REMOVE_REGEX(
 			"filters_colour_chat.regex.name_remove_regex",
-			"[^\\P{M}\\p{M}*+a-zA-Z0-9\\&._\\[\\]-]"),
+			"[^\\P{M}a-zA-Z0-9\\&._\\[\\]-]"),
 	FILTERS_MODIFY_CHAT("filters_colour_chat.modify_chat", "", ""),
 	FILTERS_MAX_NAME_LGTH(
 			"filters_colour_chat.modify_chat.max_name_length",
@@ -1381,6 +1387,11 @@ public enum ConfigNodes {
 			"economy.daily_taxes.max_town_tax_percent",
 			"25",
 			"# Maximum tax percentage allowed when taxing by percentages for towns."),
+	ECO_DAILY_TAXES_MAX_TOWN_TAX_PERCENT_AMOUNT(
+			"economy.daily_taxes.max_town_tax_percent_amount",
+			"10000",
+			"# The maximum amount of money that can be taken from a balance when using a percent tax, this is the default for all new towns."
+			),
 	ECO_PRICE_NATION_UPKEEP(
 			"economy.daily_taxes.price_nation_upkeep",
 			"100.0",

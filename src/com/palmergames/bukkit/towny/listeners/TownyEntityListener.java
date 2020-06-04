@@ -575,7 +575,7 @@ public class TownyEntityListener implements Listener {
 	}
 
 	/**
-	 * Handles crop trampling as well as pressure plates (switch use)
+	 * Handles pressure plates (switch use) not triggered by players.
 	 * 
 	 * @param event - EntityInteractEvent
 	 */
@@ -589,69 +589,46 @@ public class TownyEntityListener implements Listener {
 		Block block = event.getBlock();
 		Entity entity = event.getEntity();
 		List<Entity> passengers = entity.getPassengers();
-		
-		TownyUniverse townyUniverse = TownyUniverse.getInstance();
-		TownyWorld World = null;
 
 		if (!TownyAPI.getInstance().isTownyWorld(event.getBlock().getWorld()))
 			return;
-		
-		try {
-			TownyWorld townyWorld = townyUniverse.getDataSource().getWorld(block.getLocation().getWorld().getName());
-			// Prevent creatures trampling crops
-			if (townyWorld.isDisableCreatureTrample()) {
-				if ((block.getType() == Material.SOIL) || (block.getType() == Material.CROPS)) {
-					if (entity instanceof Creature) {
-						event.setCancelled(true);
+
+		/*
+		 * Allow players in vehicles to activate pressure plates if they
+		 * are permitted.
+		 */
+		if (passengers != null) {
+
+			for (Entity passenger : passengers) {
+				if (!passenger.getType().equals(EntityType.PLAYER)) 
+					return;
+				if (TownySettings.isSwitchMaterial(block.getType().name())) {
+					if (!plugin.getPlayerListener().onPlayerSwitchEvent((Player) passenger, block, null))
 						return;
-					}
 				}
 			}
 
-			/*
-			 * Allow players in vehicles to activate pressure plates if they
-			 * are permitted.
-			 */
-			if (passengers != null) {
+		}
 
-				// PlayerInteractEvent newEvent = new
-				// PlayerInteractEvent((Player)passenger, Action.PHYSICAL,
-				// null, block, BlockFace.SELF);
-				// Bukkit.getServer().getPluginManager().callEvent(newEvent);
 
-				for (Entity passenger : passengers) {
-					if (!passenger.getType().equals(EntityType.PLAYER)) 
-						return;
-					if (TownySettings.isSwitchMaterial(block.getType().name())) {
-						if (!plugin.getPlayerListener().onPlayerSwitchEvent((Player) passenger, block, null, World))
-							return;
-					}
-				}
-
-			}
-
-			// System.out.println("EntityInteractEvent triggered for " +
-			// entity.toString());
-
-			// Prevent creatures triggering stone pressure plates
-			if (TownySettings.isCreatureTriggeringPressurePlateDisabled()) {
-				if (block.getType() == Material.STONE_PLATE) {
-					if (entity instanceof Creature) {
-						event.setCancelled(true);
-						return;
-					}
+		// Prevent creatures triggering stone pressure plates
+		if (TownySettings.isCreatureTriggeringPressurePlateDisabled()) {
+			if (block.getType() == Material.STONE_PLATE) {
+				if (entity instanceof Creature) {
+					event.setCancelled(true);
+					return;
 				}
 			}
-
-		} catch (NotRegisteredException e) {
-			// Failed to fetch world
-			e.printStackTrace();
 		}
 
 	}
 
 	/**
-	 * Handles Wither Explosions and Enderman Thieving block protections
+	 * Handles:
+	 *  Wither explosions
+	 *  Enderman thieving protected blocks
+	 *  Ravagers breaking protected blocks
+	 *  Crop Trampling 
 	 * 
 	 * @param event - onEntityChangeBlockEvent
 	 */
@@ -661,42 +638,43 @@ public class TownyEntityListener implements Listener {
 			event.setCancelled(true);
 			return;
 		}
+		if (!TownyAPI.getInstance().isTownyWorld(event.getBlock().getWorld()))
+			return;
+
+		TownyWorld townyWorld = null;
+		try {
+			townyWorld = TownyUniverse.getInstance().getDataSource().getWorld(event.getBlock().getWorld().getName());
+		} catch (NotRegisteredException ignored) {
+		}
 		
-		TownyUniverse townyUniverse = TownyUniverse.getInstance();
+		// Crop trampling protection done here.
+		if (event.getBlock().getType().equals(Material.SOIL)) {
+			// Handle creature trampling crops if disabled in the world.
+			if (!event.getEntityType().equals(EntityType.PLAYER) && townyWorld.isDisableCreatureTrample()) {
+				event.setCancelled(true);
+				return;
+			}
+			// Handle player trampling crops if disabled in the world.
+			if (event.getEntityType().equals(EntityType.PLAYER) && townyWorld.isDisablePlayerTrample()) {
+				event.setCancelled(true);
+				return;
+			}
+		}
+
 		switch (event.getEntity().getType()) {
 
 		case WITHER:
 
-			try {
-				TownyWorld townyWorld = townyUniverse.getDataSource().getWorld(event.getBlock().getWorld().getName());
-
-				if (!townyWorld.isUsingTowny())
-					return;
-
-				if (!locationCanExplode(townyWorld, event.getBlock().getLocation())) {
-					event.setCancelled(true);
-					return;
-				}
-
-			} catch (NotRegisteredException e) {
-				// Failed to fetch world
+			if (!locationCanExplode(townyWorld, event.getBlock().getLocation())) {
+				event.setCancelled(true);
+				return;
 			}
 			break;
 
 		case ENDERMAN:
 
-			try {
-				TownyWorld townyWorld = townyUniverse.getDataSource().getWorld(event.getBlock().getWorld().getName());
-
-				if (!townyWorld.isUsingTowny())
-					return;
-
-				if (townyWorld.isEndermanProtect())
-					event.setCancelled(true);
-
-			} catch (NotRegisteredException e) {
-				// Failed to fetch world
-			}
+			if (townyWorld.isEndermanProtect())
+				event.setCancelled(true);
 			break;
 
 		default:
@@ -967,7 +945,6 @@ public class TownyEntityListener implements Listener {
 		
 		if (event instanceof HangingBreakByEntityEvent) {
 			HangingBreakByEntityEvent evt = (HangingBreakByEntityEvent) event;
-			
 			Object remover = evt.getRemover();
 			
 			/*
@@ -979,10 +956,24 @@ public class TownyEntityListener implements Listener {
 
 			if (remover instanceof Player) {
 				Player player = (Player) remover;
+				Material mat = null;
+				switch (event.getEntity().getType()) {
+				case PAINTING:
+					mat = Material.PAINTING;
+					break;
+				case LEASH_HITCH:
+					mat = Material.LEASH;
+					break;
+				case ITEM_FRAME:
+					mat = Material.ITEM_FRAME;
+					break;
+				default:
+					mat = Material.GRASS;
+				}
+					
 
 				// Get destroy permissions (updates if none exist)
-				//boolean bDestroy = PlayerCacheUtil.getCachePermission(player, hanging.getLocation(), 321, (byte) 0, TownyPermission.ActionType.DESTROY);
-				boolean bDestroy = PlayerCacheUtil.getCachePermission(player, hanging.getLocation(), Material.PAINTING, TownyPermission.ActionType.DESTROY);
+				boolean bDestroy = PlayerCacheUtil.getCachePermission(player, hanging.getLocation(), mat, TownyPermission.ActionType.DESTROY);
 
 				// Allow the removal if we are permitted
 				if (bDestroy)

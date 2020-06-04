@@ -119,6 +119,7 @@ public class TownyAdminCommand extends BaseCommand implements CommandExecutor {
 
 	private static final List<String> adminNationTabCompletes = Arrays.asList(
 		"add",
+		"kick",
 		"rename",
 		"delete",
 		"toggle",
@@ -156,7 +157,8 @@ public class TownyAdminCommand extends BaseCommand implements CommandExecutor {
 	
 	private static final List<String> adminResidentTabCompletes = Arrays.asList(
 		"rename",
-		"friend"
+		"friend",
+		"unjail"
 	);
 	
 	private static final List<String> adminResidentFriendTabCompletes = Arrays.asList(
@@ -1003,7 +1005,7 @@ public class TownyAdminCommand extends BaseCommand implements CommandExecutor {
 					TownyMessaging.sendMessage(sender, String.format(TownySettings.getLangString("msg_town_forcepvp_setting_set_to"), town.getName(), town.isAdminEnabledPVP()));
 					
 				} else
-					TownCommand.townToggle(player, StringMgmt.remArgs(split, 2), true, town);
+					TownCommand.townToggle(sender, StringMgmt.remArgs(split, 2), true, town);
 				
 			} else if (split[1].equalsIgnoreCase("set")) {
 				
@@ -1157,6 +1159,7 @@ public class TownyAdminCommand extends BaseCommand implements CommandExecutor {
 			sender.sendMessage(ChatTools.formatCommand(TownySettings.getLangString("admin_sing"), "/townyadmin nation", "new", "[name] [capital]"));
 			sender.sendMessage(ChatTools.formatCommand(TownySettings.getLangString("admin_sing"), "/townyadmin nation", "[nation]", ""));
 			sender.sendMessage(ChatTools.formatCommand(TownySettings.getLangString("admin_sing"), "/townyadmin nation", "[nation] add [] .. []", ""));
+			sender.sendMessage(ChatTools.formatCommand(TownySettings.getLangString("admin_sing"), "/townyadmin nation", "[nation] kick [] .. []", ""));
 			sender.sendMessage(ChatTools.formatCommand(TownySettings.getLangString("admin_sing"), "/townyadmin nation", "[nation] rename [newname]", ""));
 			sender.sendMessage(ChatTools.formatCommand(TownySettings.getLangString("admin_sing"), "/townyadmin nation", "[nation] delete", ""));
 			sender.sendMessage(ChatTools.formatCommand(TownySettings.getLangString("admin_sing"), "/townyadmin nation", "[nation] recheck", ""));
@@ -1200,6 +1203,10 @@ public class TownyAdminCommand extends BaseCommand implements CommandExecutor {
 				 * ); return; }
 				 */
 				NationCommand.nationAdd(nation, townyUniverse.getDataSource().getTowns(StringMgmt.remArgs(split, 2)));
+
+			} else if (split[1].equalsIgnoreCase("kick")) {
+
+				NationCommand.nationKick(sender, nation, townyUniverse.getDataSource().getTowns(StringMgmt.remArgs(split, 2)));
 
 			} else if (split[1].equalsIgnoreCase("delete")) {
 				if (!isConsole) {
@@ -1378,9 +1385,8 @@ public class TownyAdminCommand extends BaseCommand implements CommandExecutor {
 							e.printStackTrace();
 						}
 					}
-					townyUniverse.getDataSource().saveTown(town);
-					String[] msg = TownySettings.getNewMayorMsg(newMayor.getName());
-					TownyMessaging.sendPrefixedTownMessage(town, msg);
+					townyUniverse.getDataSource().saveTown(town);					
+					TownyMessaging.sendPrefixedTownMessage(town, String.format(TownySettings.getLangString("msg_new_mayor"),newMayor.getName()));
 					// TownyMessaging.sendMessage(player, msg);
 				} catch (TownyException e) {
 					TownyMessaging.sendErrorMsg(getSender(), e.getMessage());
@@ -1542,8 +1548,23 @@ public class TownyAdminCommand extends BaseCommand implements CommandExecutor {
 	
 	public void reloadPerms() {
 		String rootFolder = TownyUniverse.getInstance().getRootFolder();
-		TownyPerms.loadPerms(rootFolder + File.separator + "settings", "townyperms.yml");
+		try {
+			TownyPerms.loadPerms(rootFolder + File.separator + "settings", "townyperms.yml");
+		} catch (TownyException e) {
+			// Place Towny in Safe Mode while the townyperms.yml is unreadable.
+			plugin.setError(true);
+			TownyMessaging.sendErrorMsg(sender, "Error Loading townyperms.yml!");
+			return;
+		}
+		// If Towny is in Safe Mode (hopefully because of townyperms only) turn off Safe Mode.
+		// TODO: Potentially do a full towny reload via the normal TownyUniverse.loadSettings() so that we would know if there would be a reason to have safe mode remain on. 
+		if (plugin.isError())
+			plugin.setError(false);
+		
+		// Update everyone who is online with the changes made.
+		TownyPerms.updateOnlinePerms();
 		TownyMessaging.sendMsg(sender, TownySettings.getLangString("msg_reloaded_perms"));
+		
 	}
 
 	/**
