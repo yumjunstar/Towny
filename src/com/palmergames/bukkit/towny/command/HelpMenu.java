@@ -144,6 +144,26 @@ public enum HelpMenu {
 		}
 	},
 
+	TOWN_SET_HELP {
+		@Override
+		protected MenuBuilder load() {
+			return new MenuBuilder("town set", "")
+				.add("board [message....]", "")
+				.add("mayor", Translation.of("town_help_2"))
+				.add("homeblock", "")
+				.add("spawn/outpost/jail", "")
+				.add("perm...", "'/town set perm' " + Translation.of("res_5"))
+				.add("taxes [$]", "")
+				.add("[plottax/shoptax/embassytax] [$]", "")
+				.add("taxpercentcap [amount]", "")
+				.add("[plotprice/shopprice/embassyprice] [$]", "")
+				.add("spawncost [$]", "")
+				.add("name [name]", "")
+				.add("tag [upto 4 letters] or clear", "")
+				.add("title/surname [resident] [text]", "");				
+		}
+	},
+	
 	TOWN_INVITE {
 		@Override
 		protected MenuBuilder load() {
