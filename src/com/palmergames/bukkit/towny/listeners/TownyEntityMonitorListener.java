@@ -176,6 +176,7 @@ public class TownyEntityMonitorListener implements Listener {
 					return;
 
 				if (attackerResident.hasTown() && TownyUniverse.getInstance().hasWarEvent(attackerResident.getTown()) && defenderResident.hasTown() && TownyUniverse.getInstance().hasWarEvent(defenderResident.getTown())){
+					TownyUniverse.getInstance().getWarEvent(defenderPlayer).takeLife(defenderResident);
 					if (TownySettings.isRemovingOnMonarchDeath())
 						monarchDeath(attackerPlayer, defenderPlayer, attackerResident, defenderResident);
 
