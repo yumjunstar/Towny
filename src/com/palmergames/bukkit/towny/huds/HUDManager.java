@@ -83,7 +83,7 @@ public class HUDManager implements Listener{
 			else {
 				WarHUD.updateLocation(p, event.getTo());
 				WarHUD.updateAttackable(p, event.getTo(), TownyUniverse.getInstance().getWarEvent());
-				WarHUD.updateHealth(p, event.getTo(), TownyUniverse.getInstance().getWarEvent());
+				WarHUD.updateHealth(p, event.getTo(), TownyUniverse.getInstance().getWarEvent(p));
 			}
 		} else if (permUsers.contains(p)) {
 			if (!isPermHUDActive(p))
@@ -94,7 +94,6 @@ public class HUDManager implements Listener{
 				else
 					toggleAllOff(p);
 			}
-			
 		}
 	}
 
