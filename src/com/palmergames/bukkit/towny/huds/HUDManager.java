@@ -50,9 +50,10 @@ public class HUDManager implements Listener{
 			toggleAllOff(p);
 	}
 
-	public static void toggleAllWarHUD () {
+	public void toggleAllWarHUD (War war) {
 		for (Player p : warUsers)
-			toggleOff(p);
+			if (TownyUniverse.getInstance().getWarEvent(p).equals(war))
+				toggleOff(p);
 		warUsers.clear();
 	}
 

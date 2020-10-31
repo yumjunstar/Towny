@@ -54,6 +54,9 @@ public class War {
 	private List<Town> warringTowns = new ArrayList<>();
 	private List<Nation> warringNations = new ArrayList<>();
 	private List<Resident> warringResidents = new ArrayList<>();
+	private List<Player> onlineWarriors = new ArrayList<>();
+	private int totalResidentsAtStart = 0;
+	private int totalNationsAtStart = 0;
 	private WarSpoils warSpoils = new WarSpoils();
 	private WarType warType;
 	
@@ -87,16 +90,16 @@ public class War {
 		case CIVILWAR:
 			for (Nation nation : nations) {
 				if (!nation.isNeutral()) {
-					if (add(nation))
+					if (add(nation)) {
 						warringNations.add(nation);
-					if (warringNations.contains(nation))
 						TownyMessaging.sendPrefixedNationMessage(nation, Translation.of("msg_war_join_nation", nation.getName()));
+					}
 				} else if (!TownySettings.isDeclaringNeutral()) {
 					nation.setNeutral(false);
-					if (add(nation))
+					if (add(nation)) {
 						warringNations.add(nation);
-					if (warringNations.contains(nation))
 						TownyMessaging.sendPrefixedNationMessage(nation, Translation.of("msg_war_join_forced", nation.getName()));
+					}
 				}
 			}
 			break;
@@ -203,25 +206,9 @@ public class War {
 	}
 	
 	public void toggleEnd() {
-		warZone.clear();
-		townScores.clear();
-		
-		if (warringTowns != null) {
-			for (Town town : warringTowns) {
-				if (town.hasActiveWar())
-					town.setActiveWar(false);
-			}
-		}
-		warringTowns.clear();
-		warringNations.clear();
-		warringResidents.clear();
-//		warSpoils.setBalance(0.0, "war over");
-		warType = null;
-		plugin = null;
-		warTaskIds.clear();
 
-		warTime = false;
 		TownyUniverse.getInstance().removeWar(this);
+		end();
 	}
 
 	//// END GETTERS/SETTERS ////
@@ -285,7 +272,9 @@ public class War {
 			TownyMessaging.sendErrorMsg("[War] Could not seed spoils of war.");
 		}
 		
-		// Start the WarTimerTask
+		totalResidentsAtStart = warringResidents.size();
+		totalNationsAtStart = warringNations.size();
+		// Start the WarTimerTask if the war type allows for using townblock HP system.
 		if (warType.hasTownBlockHP) {
 			int id = BukkitTools.scheduleAsyncRepeatingTask(new WarTimerTask(plugin, this), 0, TimeTools.convertToTicks(5));
 			if (id == -1) {
@@ -294,6 +283,18 @@ public class War {
 			} else
 				addTaskId(id);
 		}
+		
+		for (Player player : Bukkit.getOnlinePlayers()) {
+			Resident resident = null;
+			try {
+				resident = TownyUniverse.getInstance().getDataSource().getResident(player.getName());
+			} catch (NotRegisteredException e) {
+				continue;
+			}
+			if (warringResidents.contains(resident))
+				addOnlineWarrior(player);
+		}
+		
 		checkEnd();
 		TownyUniverse.getInstance().addWar(this);
 	}
@@ -398,6 +399,7 @@ public class War {
 		
 		return true;
 	}
+
 	public void outputParticipants() {
 		String type = warType.getName();
 		List<String> warParticipants = new ArrayList<>();
@@ -454,23 +456,18 @@ public class War {
 				TownyMessaging.sendMessage(player, getStats());
 		}
 		
+		final War war = this;
 		// Toggle the war huds off for all players (This method is called from an async task so 
 		// we create a sync task to use the scoreboard api)
 		new BukkitRunnable() {
 
 			@Override
 			public void run() {
-				HUDManager.toggleAllWarHUD();
+				plugin.getHUDManager().toggleAllWarHUD(war);
 			}
 			
 		}.runTask(plugin);
-		
 
-		warringNations.clear();
-		warringTowns.clear();
-		warringResidents.clear();
-		warZone.clear();
-		
 		double halfWinnings;
 		double nationWinnings = 0;
 		try {
@@ -499,13 +496,29 @@ public class War {
 			}
 		} catch (EconomyException e1) {}
 		
-		
+		warZone.clear();
+		townScores.clear();
+		if (warringTowns != null) {
+			for (Town town : warringTowns) {
+				if (town.hasActiveWar())
+					town.setActiveWar(false);
+			}
+		}
+		warringTowns.clear();
+		warringNations.clear();
+		warringResidents.clear();
+		warType = null;
+		plugin = null;
+		warTaskIds.clear();
+		warTime = false;
+		TownyUniverse.getInstance().removeWar(this);
 		
 	}
 
 	/**
 	 * Add a nation to war, and all the towns within it.
-	 * @param nation {@link Nation} to incorporate into War
+	 * @param nation {@link Nation} to incorporate into War.
+	 * @return false if conditions are not met.
 	 */
 	private boolean add(Nation nation) {
 		if (nation.getEnemies().size() < 1)
@@ -531,19 +544,21 @@ public class War {
 			TownyMessaging.sendPrefixedNationMessage(nation, "You have joined a war of type: " + warType.getName());
 			return true;
 		} else {
-			for (Town town : nation.getTowns()) 
+			for (Town town : nation.getTowns()) {
 				if (warringTowns.contains(town)) {
 					warringTowns.remove(town);
 					townScores.remove(town);
 				}
-					
+			}
 			return false;
 		}
 	}
 
 	/**
 	 * Add a town to war. Set the townblocks in the town to the correct health.
+	 * Add the residents to the war, give them their lives.
 	 * @param town {@link Town} to incorporate into war
+	 * @return false if conditions are not met.
 	 */
 	private boolean add(Town town) {
 		int numTownBlocks = 0;
@@ -1032,6 +1047,7 @@ public class War {
 		checkEnd();
 	}
 
+	@Deprecated
 	public void townLeave(Town town) {
 
 		remove(town);
@@ -1039,6 +1055,7 @@ public class War {
 		checkEnd();
 	}
 
+	@Deprecated
 	public boolean townsLeft(Nation nation) {
 
 		return countActiveTowns(nation) > 0;
@@ -1064,12 +1081,15 @@ public class War {
 			// TODO: Handle town neutrality.
 			break;
 		case RIOT:
-			if (warringResidents.size() <= 0)
+			if (warringResidents.size() <= 1)
+				toggleEnd();
+			else if (CombatUtil.areAllFriends(warringResidents))
 				toggleEnd();
 			break;
 		}
 	}
 
+	@Deprecated
 	public int countActiveWarBlocks(Town town) {
 
 		int n = 0;
@@ -1078,7 +1098,8 @@ public class War {
 				n++;
 		return n;
 	}
-
+	
+	@Deprecated
 	public int countActiveTowns(Nation nation) {
 
 		int n = 0;
@@ -1094,9 +1115,20 @@ public class War {
 
 		List<String> output = new ArrayList<>();
 		output.add(ChatTools.formatTitle("War Stats"));
-		output.add(Colors.Green + Translation.of("war_stats_nations") + Colors.LightGreen + warringNations.size());
-		output.add(Colors.Green + Translation.of("war_stats_towns") + Colors.LightGreen + warringTowns.size() + " / " + townScores.size());
-		output.add(Colors.Green + Translation.of("war_stats_warzone") + Colors.LightGreen + warZone.size() + " Town blocks");
+		
+		switch (warType) {
+			case WORLDWAR:
+			case NATIONWAR:
+				output.add(Colors.Green + Translation.of("war_stats_nations") + Colors.LightGreen + warringNations.size() + " / " + totalNationsAtStart);
+			case CIVILWAR:
+			case TOWNWAR:
+				output.add(Colors.Green + Translation.of("war_stats_towns") + Colors.LightGreen + warringTowns.size() + " / " + townScores.size());
+			case RIOT:
+				output.add(Colors.Green + "  Residents: " + Colors.LightGreen + warringResidents.size() + " / " + totalResidentsAtStart);
+				break;
+		}		
+		if (warType.hasTownBlockHP)
+			output.add(Colors.Green + Translation.of("war_stats_warzone") + Colors.LightGreen + warZone.size() + " Town blocks");
 		try {
 			output.add(Colors.Green + Translation.of("war_stats_spoils_of_war") + Colors.LightGreen + TownyEconomyHandler.getFormattedBalance(warSpoils.getHoldingBalance()));
 			return output;
@@ -1171,4 +1203,19 @@ public class War {
 			player.sendMessage(line);
 	}
 	
+	public void addOnlineWarrior(Player player) {
+		onlineWarriors.add(player);
+	}
+	
+	public void removeOnlineWarrior(Player player) {
+		onlineWarriors.remove(player);
+	}
+	
+	public List<Player> getOnlineWarriors() {
+		return onlineWarriors;
+	}
+	
+	public WarType getWarType() {
+		return warType;
+	}
 }
