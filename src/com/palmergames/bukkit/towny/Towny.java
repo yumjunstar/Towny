@@ -215,7 +215,7 @@ public class Towny extends JavaPlugin {
 		}
 
 		if (TownyAPI.getInstance().isWarTime()) {
-			TownyUniverse.getInstance().getWarEvent().end();
+			TownyUniverse.getInstance().getWarEvent().end(false);
 		}
 
 		// Turn off timers.		

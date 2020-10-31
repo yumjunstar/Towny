@@ -71,61 +71,109 @@ public class War {
 	 */
 	public War(Towny plugin, int startDelay, List<Nation> nations, List<Town> towns, List<Resident> residents, WarType warType) {
 
-		this.plugin = plugin;
 		
 		if (!TownySettings.isUsingEconomy()) {
 			TownyMessaging.sendGlobalMessage("War Event cannot function while using_economy: false in the config.yml. Economy Required.");
         	return;
 		}
+
+		this.plugin = plugin;
+		this.warType = warType;
 		
+		
+		/*
+		 * Currently only used to add money to the war spoils.
+		 */
 		EventWarPreStartEvent preEvent = new EventWarPreStartEvent();
 		Bukkit.getServer().getPluginManager().callEvent(preEvent);
 		if (preEvent.getWarSpoils() != 0.0)
 			warSpoils.deposit(preEvent.getWarSpoils(), "WarSpoils EventWarPreStartEvent Added");
 
-		this.warType = warType;
+		/*
+		 * Takes the given lists and add them to War lists, if they 
+		 * meet the requires set out in add(Town) and add(Nation),
+		 * based on the WarType.
+		 */
 		switch(warType) {
-		case WORLDWAR:
-		case NATIONWAR:
-		case CIVILWAR:
-			for (Nation nation : nations) {
-				if (!nation.isNeutral()) {
-					if (add(nation)) {
-						warringNations.add(nation);
-						TownyMessaging.sendPrefixedNationMessage(nation, Translation.of("msg_war_join_nation", nation.getName()));
-					}
-				} else if (!TownySettings.isDeclaringNeutral()) {
-					nation.setNeutral(false);
-					if (add(nation)) {
-						warringNations.add(nation);
-						TownyMessaging.sendPrefixedNationMessage(nation, Translation.of("msg_war_join_forced", nation.getName()));
+			case WORLDWAR:
+			case NATIONWAR:
+			case CIVILWAR:
+				for (Nation nation : nations) {
+					if (!nation.isNeutral()) {
+						if (add(nation)) {
+							warringNations.add(nation);
+							TownyMessaging.sendPrefixedNationMessage(nation, Translation.of("msg_war_join_nation", nation.getName()));
+						}
+					} else if (!TownySettings.isDeclaringNeutral()) {
+						nation.setNeutral(false);
+						if (add(nation)) {
+							warringNations.add(nation);
+							TownyMessaging.sendPrefixedNationMessage(nation, Translation.of("msg_war_join_forced", nation.getName()));
+						}
 					}
 				}
-			}
-			break;
-		case TOWNWAR:
-		case RIOT:
-			for (Town town : towns) {
-				// TODO: town neutrality tests here
-				if (add(town))
-					warringTowns.add(town);
-			}
-			break;
+				break;
+			case TOWNWAR:
+			case RIOT:
+				for (Town town : towns) {
+					// TODO: town neutrality tests here
+					if (add(town))
+						warringTowns.add(town);
+				}
+				break;
 		}
-
 		
+
+		/*
+		 * Make sure that we have enough people/towns/nations involved
+		 * for the give WarType.
+		 */
 		if (!verifyTwoEnemies()) {
 			TownyMessaging.sendGlobalMessage("Failed to get the correct number of teams for war to happen! Good-bye!");
-			toggleEnd();
+			end(false);
 			return;
 		}
-			
 		
+		/*
+		 * Populate a couple of variables that will help us show the end users
+		 * how many residents/nations were at war.
+		 */
+		totalResidentsAtStart = warringResidents.size();
+		totalNationsAtStart = warringNations.size();
+		
+		/*
+		 * Seed the war spoils.
+		 */
+		// Seed spoils of war		
+		try {
+			warSpoils.deposit(warType.baseSpoils, "Start of " + warType.getName() + " War - Base Spoils");			
+			TownyMessaging.sendGlobalMessage(Translation.of("msg_war_seeding_spoils_with", TownySettings.getBaseSpoilsOfWar()));			
+			TownyMessaging.sendGlobalMessage(Translation.of("msg_war_total_seeding_spoils", warSpoils.getHoldingBalance()));
+			TownyMessaging.sendGlobalMessage(Translation.of("msg_war_activate_war_hud_tip"));
+			
+			EventWarStartEvent event = new EventWarStartEvent(warringTowns, warringNations, warSpoils.getHoldingBalance());
+			Bukkit.getServer().getPluginManager().callEvent(event);
+		} catch (EconomyException e) {
+			TownyMessaging.sendErrorMsg("[War] Could not seed spoils of war.");
+			end(false);
+			return;
+		}
+		
+		/*
+		 * If things have gotten this far it is reasonable to think we can start the war.
+		 */
 		setupDelay(startDelay);
-		start();
 	}
 
 	////START GETTERS/SETTERS ////
+
+	/*
+	 * Task Related
+	 */
+	public List<Integer> getTaskIds() {
+
+		return new ArrayList<>(warTaskIds);
+	}
 	
 	public void addTaskId(int id) {
 
@@ -144,26 +192,22 @@ public class War {
 		clearTaskIds();
 	}
 	
-	public void setPlugin(Towny plugin) {
+	/*
+	 * Towny Plugin Related - Unused
+	 */
+	@Deprecated
+	public void setPlugin(Towny plugin) {this.plugin = plugin;}
 
-		this.plugin = plugin;
-	}
+	@Deprecated
+	public Towny getPlugin() {return plugin;}
 
-	public List<Integer> getTaskIds() {
-
-		return new ArrayList<>(warTaskIds);
-	}
-
-	public Towny getPlugin() {
-
-		return plugin;
-	}
-
-	public boolean isWarTime() {
-
-		return warTime;
-	}
+	 // required while we still have /ta toggle war command.
+	@Deprecated
+	public boolean isWarTime() {return warTime;}
 	
+	/*
+	 * War Spoils Related
+	 */
 	public WarSpoils getWarSpoils() {
 
 		return warSpoils;
@@ -185,11 +229,6 @@ public class War {
 		return warringResidents;
 	}
 	
-	public boolean isWarZone(WorldCoord worldCoord) {
-
-		return warZone.containsKey(worldCoord);
-	}
-
 	public boolean isWarringNation(Nation nation) {
 
 		return warringNations.contains(nation);
@@ -205,12 +244,11 @@ public class War {
 		return warringResidents.contains(resident);
 	}
 	
-	public void toggleEnd() {
+	public boolean isWarZone(WorldCoord worldCoord) {
 
-		TownyUniverse.getInstance().removeWar(this);
-		end();
+		return warZone.containsKey(worldCoord);
 	}
-
+	
 	//// END GETTERS/SETTERS ////
 	
 	/**
@@ -227,7 +265,7 @@ public class War {
 				int id = BukkitTools.scheduleAsyncDelayedTask(new ServerBroadCastTimerTask(plugin, Translation.of("war_starts_in_x", TimeMgmt.formatCountdownTime(t))), TimeTools.convertToTicks((delay - t)));
 				if (id == -1) {
 					TownyMessaging.sendErrorMsg("Could not schedule a countdown message for war event.");
-					end();
+					end(false);
 				} else
 					addTaskId(id);
 			}
@@ -242,7 +280,7 @@ public class War {
 			}, TimeTools.convertToTicks(delay));
 			if (id == -1) {
 				TownyMessaging.sendErrorMsg("Could not schedule setup delay for war event.");
-				end();
+				end(false);
 			} else {
 				addTaskId(id);
 			}
@@ -259,27 +297,12 @@ public class War {
 
 		warTime = true;
 
-		// Seed spoils of war		
-		try {
-			warSpoils.deposit(warType.baseSpoils, "Start of " + warType.getName() + " War - Base Spoils");			
-			TownyMessaging.sendGlobalMessage(Translation.of("msg_war_seeding_spoils_with", TownySettings.getBaseSpoilsOfWar()));			
-			TownyMessaging.sendGlobalMessage(Translation.of("msg_war_total_seeding_spoils", warSpoils.getHoldingBalance()));
-			TownyMessaging.sendGlobalMessage(Translation.of("msg_war_activate_war_hud_tip"));
-			
-			EventWarStartEvent event = new EventWarStartEvent(warringTowns, warringNations, warSpoils.getHoldingBalance());
-			Bukkit.getServer().getPluginManager().callEvent(event);
-		} catch (EconomyException e) {
-			TownyMessaging.sendErrorMsg("[War] Could not seed spoils of war.");
-		}
-		
-		totalResidentsAtStart = warringResidents.size();
-		totalNationsAtStart = warringNations.size();
 		// Start the WarTimerTask if the war type allows for using townblock HP system.
 		if (warType.hasTownBlockHP) {
 			int id = BukkitTools.scheduleAsyncRepeatingTask(new WarTimerTask(plugin, this), 0, TimeTools.convertToTicks(5));
 			if (id == -1) {
 				TownyMessaging.sendErrorMsg("Could not schedule war event loop.");
-				end();
+				end(false);
 			} else
 				addTaskId(id);
 		}
@@ -447,18 +470,34 @@ public class War {
 	/**
 	 * End war.
 	 * Send the stats to all the players, toggle all the war HUDS.
+	 * @param endedSuccessful - False if something has caused the war to finish before it should have.
 	 */
-	public void end() {
+	public void end(boolean endedSuccessful) {
 		
-		// Send stats to the players
+		/*
+		 * Print out stats to players
+		 */
 		for (Player player : BukkitTools.getOnlinePlayers()) {
 			if (player != null)
 				TownyMessaging.sendMessage(player, getStats());
 		}
+
+		/*
+		 * Kill the war huds.
+		 */
+		removeWarHuds(this);
 		
-		final War war = this;
-		// Toggle the war huds off for all players (This method is called from an async task so 
-		// we create a sync task to use the scoreboard api)
+		/*
+		 * Pay out the money.
+		 */
+		if (endedSuccessful)
+			awardSpoils();
+
+		TownyUniverse.getInstance().removeWar(this);
+		
+	}
+	
+	private void removeWarHuds(War war) {
 		new BukkitRunnable() {
 
 			@Override
@@ -466,8 +505,10 @@ public class War {
 				plugin.getHUDManager().toggleAllWarHUD(war);
 			}
 			
-		}.runTask(plugin);
-
+		}.runTask(plugin);		
+	}
+	
+	private void awardSpoils() {
 		double halfWinnings;
 		double nationWinnings = 0;
 		try {
@@ -495,24 +536,6 @@ public class War {
 			} catch (TownyException e) {
 			}
 		} catch (EconomyException e1) {}
-		
-		warZone.clear();
-		townScores.clear();
-		if (warringTowns != null) {
-			for (Town town : warringTowns) {
-				if (town.hasActiveWar())
-					town.setActiveWar(false);
-			}
-		}
-		warringTowns.clear();
-		warringNations.clear();
-		warringResidents.clear();
-		warType = null;
-		plugin = null;
-		warTaskIds.clear();
-		warTime = false;
-		TownyUniverse.getInstance().removeWar(this);
-		
 	}
 
 	/**
@@ -1067,24 +1090,24 @@ public class War {
 		case WORLDWAR:
 		case NATIONWAR:
 			if (warringNations.size() <= 1)
-				toggleEnd();
+				end(true);
 			else if (CombatUtil.areAllAllies(warringNations))
-				toggleEnd();
+				end(true);
 			break;
 		case CIVILWAR:
 			if (warringTowns.size() <= 1)
-				toggleEnd();
+				end(true);
 			break;
 		case TOWNWAR:
 			if (warringTowns.size() <= 1)
-				toggleEnd();
+				end(true);
 			// TODO: Handle town neutrality.
 			break;
 		case RIOT:
 			if (warringResidents.size() <= 1)
-				toggleEnd();
+				end(true);
 			else if (CombatUtil.areAllFriends(warringResidents))
-				toggleEnd();
+				end(true);
 			break;
 		}
 	}
