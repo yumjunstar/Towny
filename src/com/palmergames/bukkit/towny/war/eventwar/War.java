@@ -23,6 +23,8 @@ import com.palmergames.bukkit.towny.object.TownBlockType;
 import com.palmergames.bukkit.towny.object.Translation;
 import com.palmergames.bukkit.towny.object.WorldCoord;
 import com.palmergames.bukkit.towny.utils.CombatUtil;
+import com.palmergames.bukkit.towny.utils.NameGenerator;
+//import com.palmergames.bukkit.util.BookFactory;
 import com.palmergames.bukkit.util.BukkitTools;
 import com.palmergames.bukkit.util.ChatTools;
 import com.palmergames.bukkit.util.Colors;
@@ -41,6 +43,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitScheduler;
+
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
@@ -59,6 +63,10 @@ public class War {
 	private int totalNationsAtStart = 0;
 	private WarSpoils warSpoils = new WarSpoils();
 	private WarType warType;
+	private String warName;
+	private String newline = "\n";
+	public static final SimpleDateFormat warDateFormat = new SimpleDateFormat("MMM d yyyy '@' HH:mm");
+	
 	
 	private Towny plugin;
 	private boolean warTime = false;
@@ -159,10 +167,34 @@ public class War {
 			return;
 		}
 		
+		setWarName();
 		/*
 		 * If things have gotten this far it is reasonable to think we can start the war.
 		 */
 		setupDelay(startDelay);
+	}
+
+	private void setWarName() {
+		
+		String warName = null;
+		switch (warType) {
+		case WORLDWAR:
+			warName = String.format("World War of %s", NameGenerator.getRandomWarName());
+			break;
+		case NATIONWAR:			
+			warName = String.format("War of %s", NameGenerator.getRandomWarName());
+			break;
+		case TOWNWAR:
+			warName = String.format("%s - %s Skirmish", warringTowns.get(0), warringTowns.get(1));
+			break;
+		case CIVILWAR:
+			warName = String.format("%s Civil War", warringNations.get(0));
+			break;
+		case RIOT:
+			warName = String.format("%s Riot", warringTowns.get(0));
+			break;
+		}
+		this.warName = warName;
 	}
 
 	////START GETTERS/SETTERS ////
@@ -314,12 +346,119 @@ public class War {
 			} catch (NotRegisteredException e) {
 				continue;
 			}
-			if (warringResidents.contains(resident))
+			if (warringResidents.contains(resident)) {
+//				player.getInventory().addItem(BookFactory.makeBook(warName, "War Declared", createWarStartBookText()));
 				addOnlineWarrior(player);
+			}
 		}
 		
 		checkEnd();
 		TownyUniverse.getInstance().addWar(this);
+	}
+
+	private String createWarStartBookText() {
+		
+		/*
+		 * Flashy Header.
+		 */
+		String text = "oOo War Declared! oOo" + newline;
+		text += "-" + warDateFormat.format(System.currentTimeMillis()) + "-" + newline;
+		text += "-------------------" + newline;
+		
+		/*
+		 * Add who is involved.
+		 */
+		switch(warType) {
+			case WORLDWAR:
+				
+				text += "War has broken out across all enemied nations!" + newline;
+				text += newline;
+				text += "The following nations have joined the battle: " + newline;
+				for (Nation nation : warringNations)
+					text+= "* " + nation.getName() + newline;
+				text += newline;
+				text += "May the victors bring glory to their nation!";			
+				break;
+				
+			case NATIONWAR:
+				
+				text += "War has broken out between two nations:" + newline;
+				for (Nation nation : warringNations)
+					text+= "* " + nation.getName() + newline;
+				text += newline;
+				text += "May the victor bring glory to their nation!";
+				break;
+				
+			case CIVILWAR:
+				
+				text += String.format("Civil war has broken out in the nation of %s!", warringNations.get(0).getName()) + newline ;
+				text += newline;
+				text += "The following towns have joined the battle: " + newline;
+				for (Town town : warringTowns)
+					text+= "* " + town.getName() + newline;
+				text += newline;
+				text += "May the victor bring peace to their nation!";
+				break;
+				
+			case TOWNWAR:
+				
+				text += "War has broken out between two towns:";
+				for (Town town : warringTowns)
+					text+= newline + "* " + town.getName();
+				text += newline;
+				text += "May the victor bring glory to their town!";
+				break;
+				
+			case RIOT:
+				
+				text += String.format("A riot has broken out in the town of %s!", warringTowns.get(0).getName()) + newline;
+				text += newline;
+				text += "The following residents have taken up arms: " + newline;
+				for (Resident resident: warringTowns.get(0).getResidents())
+					text+= "* " + resident.getName() + newline;
+				for (Resident resident: warringTowns.get(0).getResidents())
+					text+= "* " + resident.getName() + newline;
+				text += newline;
+				text += "The last man standing will be the leader, but what will remain?!";
+				break;
+		}
+		
+		/*
+		 * Add scoring types and winnings at stake.
+		 */
+		text += newline;
+		text += "-------------------" + newline;
+		text += "War Rules:" + newline;
+		if (warType.hasTownBlockHP) {
+			text += "Town blocks will have an HP stat. " + newline;
+			text += "Regular Townblocks have an HP of " + TownySettings.getWarzoneTownBlockHealth() + ". ";
+			text += "Homeblocks have an HP of " + TownySettings.getWarzoneHomeBlockHealth() + ". ";
+			text += "Townblocks lose HP when enemies stand anywhere inside of the plot above Y level " + TownySettings.getMinWarHeight() + ". ";
+			if (TownySettings.getPlotsHealableInWar())
+				text += "Townblocks that have not dropped all the way to 0 hp are healable by town members and their allies. ";
+			if (TownySettings.getOnlyAttackEdgesInWar())
+				text += "Only edge plots will be attackable at first, so protect your borders and at all costs, do not let the enemy drop your homeblock to 0 hp! ";
+			if (warType.hasTownBlocksSwitchTowns)
+				text += "Townblocks which drop to 0 hp will be taken over by the attacker permanently! ";
+			else
+				text += "Townblocks which drop to 0 hp will not change ownership after the war. ";
+			if (warType.hasTownConquering) {
+				text += "Towns that have their homeblock drop to 0 hp will leave their nation and join the nation who conquered them. ";
+				if (TownySettings.getWarEventConquerTime() > 0)
+					text += "These towns will be conquered for " + TownySettings.getWarEventConquerTime() + " days. ";
+			}
+		}
+		if (warType.hasMonarchDeath && warType.lives > 0) {
+			text += newline + "If your king or mayor runs out of lives your nation or town will be removed from the war! ";
+		}
+		
+		if (warType.lives > 0)
+			text += newline + "Everyone will start with " + warType.lives + (warType.lives == 1 ? " life.":" lives.") + " If you run out of lives and die again you will be removed from the war. ";
+		else
+			text += newline + "There are unlimited lives. ";
+		
+		
+		return text;
 	}
 
 	private boolean verifyTwoEnemies() {
@@ -424,7 +563,7 @@ public class War {
 	}
 
 	public void outputParticipants() {
-		String type = warType.getName();
+		String name = warName;
 		List<String> warParticipants = new ArrayList<>();
 		
 		switch (warType) {
@@ -460,7 +599,7 @@ public class War {
 					towns++;
 			warParticipants.add(Translation.of("msg_war_participants", nation.getName(), towns));			
 		}
-		TownyMessaging.sendPlainGlobalMessage(ChatTools.formatTitle(type + " Participants"));
+		TownyMessaging.sendPlainGlobalMessage(ChatTools.formatTitle(name + " Participants"));
 
 		for (String string : warParticipants)
 			TownyMessaging.sendPlainGlobalMessage(string);
