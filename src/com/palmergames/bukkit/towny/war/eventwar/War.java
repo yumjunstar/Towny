@@ -24,7 +24,7 @@ import com.palmergames.bukkit.towny.object.Translation;
 import com.palmergames.bukkit.towny.object.WorldCoord;
 import com.palmergames.bukkit.towny.utils.CombatUtil;
 import com.palmergames.bukkit.towny.utils.NameGenerator;
-//import com.palmergames.bukkit.util.BookFactory;
+import com.palmergames.bukkit.util.BookFactory;
 import com.palmergames.bukkit.util.BukkitTools;
 import com.palmergames.bukkit.util.ChatTools;
 import com.palmergames.bukkit.util.Colors;
@@ -61,6 +61,7 @@ public class War {
 	private List<Player> onlineWarriors = new ArrayList<>();
 	private int totalResidentsAtStart = 0;
 	private int totalNationsAtStart = 0;
+	private double warSpoilsAtStart = 0.0;
 	private WarSpoils warSpoils = new WarSpoils();
 	private WarType warType;
 	private String warName;
@@ -159,8 +160,9 @@ public class War {
 			TownyMessaging.sendGlobalMessage(Translation.of("msg_war_total_seeding_spoils", warSpoils.getHoldingBalance()));
 			TownyMessaging.sendGlobalMessage(Translation.of("msg_war_activate_war_hud_tip"));
 			
-			EventWarStartEvent event = new EventWarStartEvent(warringTowns, warringNations, warSpoils.getHoldingBalance());
+			EventWarStartEvent event = new EventWarStartEvent(warringTowns, warringNations, warSpoilsAtStart);
 			Bukkit.getServer().getPluginManager().callEvent(event);
+			warSpoilsAtStart = warSpoils.getHoldingBalance();
 		} catch (EconomyException e) {
 			TownyMessaging.sendErrorMsg("[War] Could not seed spoils of war.");
 			end(false);
@@ -347,7 +349,7 @@ public class War {
 				continue;
 			}
 			if (warringResidents.contains(resident)) {
-//				player.getInventory().addItem(BookFactory.makeBook(warName, "War Declared", createWarStartBookText()));
+				player.getInventory().addItem(BookFactory.makeBook(warName, "War Declared", createWarStartBookText()));
 				addOnlineWarrior(player);
 			}
 		}
@@ -448,15 +450,16 @@ public class War {
 					text += "These towns will be conquered for " + TownySettings.getWarEventConquerTime() + " days. ";
 			}
 		}
+		text += newline;
 		if (warType.hasMonarchDeath && warType.lives > 0) {
 			text += newline + "If your king or mayor runs out of lives your nation or town will be removed from the war! ";
 		}
-		
 		if (warType.lives > 0)
 			text += newline + "Everyone will start with " + warType.lives + (warType.lives == 1 ? " life.":" lives.") + " If you run out of lives and die again you will be removed from the war. ";
 		else
 			text += newline + "There are unlimited lives. ";
-		
+		text += newline;
+		text += "WarSpoils up for grabs at the end of this war: " + TownyEconomyHandler.getFormattedBalance(warSpoilsAtStart);
 		
 		return text;
 	}
