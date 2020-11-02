@@ -53,7 +53,7 @@ public class War {
 	
 	// War Data
 	private Hashtable<WorldCoord, Integer> warZone = new Hashtable<>();
-	private Hashtable<Resident, Integer> playerLives = new Hashtable<>();
+	private Hashtable<Resident, Integer> residentLives = new Hashtable<>();
 	private Hashtable<Town, Integer> townScores = new Hashtable<>();
 	private List<Town> warringTowns = new ArrayList<>();
 	private List<Nation> warringNations = new ArrayList<>();
@@ -285,7 +285,7 @@ public class War {
 		case RIOT:
 			warParticipants.add(Colors.translateColorCodes("&6[War] &eResident Name &f(&bLives&f) "));
 			for (Resident resident : warringResidents) {
-				warParticipants.add(Translation.of("msg_war_participants", resident.getName(), playerLives.get(resident)));
+				warParticipants.add(Translation.of("msg_war_participants", resident.getName(), residentLives.get(resident)));
 			}
 			break;
 		}
@@ -479,6 +479,10 @@ public class War {
 		return warType;
 	}
 
+	public int getLives(Resident resident) {
+		return residentLives.get(resident);
+	}
+
 	/*
 	 * Adds towns and nations to the war.
 	 */
@@ -592,7 +596,7 @@ public class War {
 		 * TODO: Make mayors/kings have the ability to receive a different amount.
 		 */
 		for (Resident resident : town.getResidents()) 
-			playerLives.put(resident, warType.lives);
+			residentLives.put(resident, warType.lives);
 
 		return true;
 	}
@@ -1053,13 +1057,64 @@ public class War {
 	 */
 	
 	/**
+	 * A resident has killed another resident.
+	 * @param defender - {@link Resident} dying.
+	 * @param attacker - {@link Resident} killing.
+	 * @param loc - {@link Location} of the death.
+	 */
+	public void residentScoredKillPoints(Resident defender,  Resident attacker, Location loc) {
+		switch(warType) {
+		case RIOT:
+			// TODO: Handle riot scoring.
+			break;
+		default:
+			townScored(defender, attacker, loc);			
+			break;
+		}
+	}
+
+	/**
+	 * A town has scored a kill point.
+	 * 
+	 * @param defender - {@link Resident} dying.
+	 * @param attackerRes - {@link Resident} killing.
+	 * @param loc - {@link Location} of the death.
+	 */
+	private void townScored(Resident defender, Resident attacker, Location loc) {
+		int points = TownySettings.getWarPointsForKill();
+		Town attackerTown = null;
+		Town defenderTown = null;
+		try {
+			attackerTown = attacker.getTown();
+			defenderTown = defender.getTown();
+		} catch (NotRegisteredException ignored) {}
+		
+		String pointMessage;
+		TownBlock deathLoc = TownyAPI.getInstance().getTownBlock(loc);
+		if (deathLoc == null)
+			pointMessage = Translation.of("MSG_WAR_SCORE_PLAYER_KILL", attacker.getName(), defender.getName(), points, attackerTown.getName());
+		else if (warZone.containsKey(deathLoc.getWorldCoord()) && attackerTown.getTownBlocks().contains(deathLoc))
+			pointMessage = Translation.of("MSG_WAR_SCORE_PLAYER_KILL_DEFENDING", attacker.getName(), defender.getName(), attacker.getName(), points, attackerTown.getName());
+		else if (warZone.containsKey(deathLoc.getWorldCoord()) && defenderTown.getTownBlocks().contains(deathLoc))
+			pointMessage = Translation.of("MSG_WAR_SCORE_PLAYER_KILL_DEFENDING", attacker.getName(), defender.getName(), defender.getName(), points, attackerTown.getName());
+		else
+			pointMessage = Translation.of("MSG_WAR_SCORE_PLAYER_KILL", attacker.getName(), defender.getName(), points, attackerTown.getName());
+
+		townScores.put(attackerTown, townScores.get(attackerTown) + points);
+		TownyMessaging.sendGlobalMessage(pointMessage);
+
+		TownScoredEvent event = new TownScoredEvent(attackerTown, townScores.get(attackerTown));
+		Bukkit.getServer().getPluginManager().callEvent(event);
+	}
+	
+	/**
 	 * A town has scored.
 	 * @param town - the scoring town
 	 * @param n - the score to be added
 	 * @param fallenObject - the {@link Object} that fell
 	 * @param townBlocksFallen -  the number of fallen townblocks {@link TownBlock}s ({@link Integer})
 	 */
-	public void townScored(Town town, int n, Object fallenObject, int townBlocksFallen) {
+	private void townScored(Town town, int n, Object fallenObject, int townBlocksFallen) {
 
 		String pointMessage = "";
 		if (fallenObject instanceof Nation)
@@ -1080,44 +1135,17 @@ public class War {
 		TownScoredEvent event = new TownScoredEvent(town, townScores.get(town));
 		Bukkit.getServer().getPluginManager().callEvent(event);
 	}
-
-	/**
-	 * A town has scored and there is data on the attacking/defending town
-	 * @param defenderTown - {@link Town} defending an attack
-	 * @param attackerTown - {@link Town} on the attack
-	 * @param defenderPlayer - {@link Player} defending
-	 * @param attackerPlayer - {@link Player} attacking
-	 * @param n - the score to be added ({@link Integer})
-	 */
-	public void townScored(Town defenderTown,  Town attackerTown, Player defenderPlayer, Player attackerPlayer, int n) {
-		String pointMessage;
-		TownBlock deathLoc = TownyAPI.getInstance().getTownBlock(defenderPlayer.getLocation());
-		if (deathLoc == null)
-			pointMessage = Translation.of("MSG_WAR_SCORE_PLAYER_KILL", attackerPlayer.getName(), defenderPlayer.getName(), n, attackerTown.getName());
-		else if (warZone.containsKey(deathLoc.getWorldCoord()) && attackerTown.getTownBlocks().contains(deathLoc))
-			pointMessage = Translation.of("MSG_WAR_SCORE_PLAYER_KILL_DEFENDING", attackerPlayer.getName(), defenderPlayer.getName(), attackerPlayer.getName(), n, attackerTown.getName());
-		else if (warZone.containsKey(deathLoc.getWorldCoord()) && defenderTown.getTownBlocks().contains(deathLoc))
-			pointMessage = Translation.of("MSG_WAR_SCORE_PLAYER_KILL_DEFENDING", attackerPlayer.getName(), defenderPlayer.getName(), defenderPlayer.getName(), n, attackerTown.getName());
-		else
-			pointMessage = Translation.of("MSG_WAR_SCORE_PLAYER_KILL", attackerPlayer.getName(), defenderPlayer.getName(), n, attackerTown.getName());
-
-		townScores.put(attackerTown, townScores.get(attackerTown) + n);
-		TownyMessaging.sendGlobalMessage(pointMessage);
-
-		TownScoredEvent event = new TownScoredEvent(attackerTown, townScores.get(attackerTown));
-		Bukkit.getServer().getPluginManager().callEvent(event);
-	}
 	
 	/**
 	 * Takes a life from the resident, removes them from the war if they have none remaining.
 	 * @param resident
 	 */
 	public void takeLife(Resident resident) {
-		if (playerLives.get(resident) == 0) {
+		if (residentLives.get(resident) == 0) {
 			remove(resident);
 			checkEnd();
 		} else {
-			playerLives.put(resident, playerLives.get(resident) - 1);
+			residentLives.put(resident, residentLives.get(resident) - 1);
 		}
 	}
 	

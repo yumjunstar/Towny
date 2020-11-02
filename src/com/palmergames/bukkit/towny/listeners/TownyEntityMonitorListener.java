@@ -10,7 +10,6 @@ import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.event.player.PlayerKilledPlayerEvent;
 import com.palmergames.bukkit.towny.exceptions.EconomyException;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
-import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
 import com.palmergames.bukkit.towny.object.TownBlock;
@@ -18,8 +17,6 @@ import com.palmergames.bukkit.towny.object.TownBlockType;
 import com.palmergames.bukkit.towny.object.Translation;
 import com.palmergames.bukkit.towny.permissions.PermissionNodes;
 import com.palmergames.bukkit.towny.tasks.TeleportWarmupTimerTask;
-import com.palmergames.bukkit.towny.utils.CombatUtil;
-import com.palmergames.bukkit.towny.war.eventwar.War;
 import com.palmergames.bukkit.towny.war.eventwar.WarSpoils;
 import com.palmergames.bukkit.util.BukkitTools;
 
@@ -137,10 +134,8 @@ public class TownyEntityMonitorListener implements Listener {
 			 * 
 			 * - Fire PlayerKilledPlayerEvent.
 			 * 
-			 * TODO: Move war-related things onto listeners for the PlayerKilledPlayerEvent.
 			 * - charge death payment,
 			 * - check for jailing attacking residents,
-			 * - award wartime death points.
 			 */
 			if (attackerPlayer != null) {
 				PlayerKilledPlayerEvent deathEvent = new PlayerKilledPlayerEvent(attackerPlayer, defenderPlayer, attackerResident, defenderResident, defenderPlayer.getLocation(), event);
@@ -148,8 +143,7 @@ public class TownyEntityMonitorListener implements Listener {
 
 				deathPayment(attackerPlayer, defenderPlayer, attackerResident, defenderResident);			
 				isJailingAttackers(attackerPlayer, defenderPlayer, attackerResident, defenderResident);
-				if (TownyAPI.getInstance().isWarTime())
-					wartimeDeathPoints(attackerPlayer, defenderPlayer, attackerResident, defenderResident);
+
 				
 			/*
 			 * Player has died from an entity but not a player & death price is not PVP only.
@@ -168,46 +162,6 @@ public class TownyEntityMonitorListener implements Listener {
 		}
 	}
 
-	private void wartimeDeathPoints(Player attackerPlayer, Player defenderPlayer, Resident attackerResident, Resident defenderResident) {
-
-		if (attackerPlayer != null && defenderPlayer != null && TownyAPI.getInstance().isWarTime())
-			try {
-				if (CombatUtil.isAlly(attackerPlayer.getName(), defenderPlayer.getName()))
-					return;
-
-				if (attackerResident.hasTown() && TownyUniverse.getInstance().hasWarEvent(attackerResident.getTown()) && defenderResident.hasTown() && TownyUniverse.getInstance().hasWarEvent(defenderResident.getTown())){
-					TownyUniverse.getInstance().getWarEvent(defenderPlayer).takeLife(defenderResident);
-					if (TownySettings.isRemovingOnMonarchDeath())
-						monarchDeath(attackerPlayer, defenderPlayer, attackerResident, defenderResident);
-
-					if (TownySettings.getWarPointsForKill() > 0){
-						TownyUniverse.getInstance().getWarEvent().townScored(defenderResident.getTown(), attackerResident.getTown(), defenderPlayer, attackerPlayer, TownySettings.getWarPointsForKill());
-					}
-				}
-			} catch (NotRegisteredException e) {
-			}
-	}
-
-	private void monarchDeath(Player attackerPlayer, Player defenderPlayer, Resident attackerResident, Resident defenderResident) {
-
-		War warEvent = TownyUniverse.getInstance().getWarEvent();
-		try {
-
-			Nation defenderNation = defenderResident.getTown().getNation();
-			Town defenderTown = defenderResident.getTown();
-			if (warEvent.isWarringNation(defenderNation) && defenderResident.isKing()){
-				TownyMessaging.sendGlobalMessage(Translation.of("MSG_WAR_KING_KILLED", defenderNation.getName()));
-				if (attackerResident != null)
-					warEvent.remove(attackerResident.getTown(), defenderNation);
-			}else if (warEvent.isWarringNation(defenderNation) && defenderResident.isMayor()) {
-				TownyMessaging.sendGlobalMessage(Translation.of("MSG_WAR_MAYOR_KILLED", defenderTown.getName()));
-				if (attackerResident != null)
-					warEvent.remove(attackerResident.getTown(), defenderResident.getTown());
-			}
-		} catch (NotRegisteredException e) {
-		}
-	}
-	
 	public void deathPayment(Player defenderPlayer, Resident defenderResident) throws NotRegisteredException {
 
 		if (!TownyEconomyHandler.isActive())
