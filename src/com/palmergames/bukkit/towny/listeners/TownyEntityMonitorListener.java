@@ -17,6 +17,8 @@ import com.palmergames.bukkit.towny.object.TownBlockType;
 import com.palmergames.bukkit.towny.object.Translation;
 import com.palmergames.bukkit.towny.permissions.PermissionNodes;
 import com.palmergames.bukkit.towny.tasks.TeleportWarmupTimerTask;
+import com.palmergames.bukkit.towny.utils.CombatUtil;
+import com.palmergames.bukkit.towny.war.eventwar.War;
 import com.palmergames.bukkit.towny.war.eventwar.WarSpoils;
 import com.palmergames.bukkit.util.BukkitTools;
 
@@ -279,6 +281,7 @@ public class TownyEntityMonitorListener implements Listener {
 			return;
 
 		if (attackerPlayer != null && TownyAPI.getInstance().isWarTime() && TownySettings.getWartimeDeathPrice() > 0 ) {
+			War war = TownyUniverse.getInstance().getWarEvent(attackerPlayer);
 			try {
 
 				double price = TownySettings.getWartimeDeathPrice();
@@ -306,9 +309,9 @@ public class TownyEntityMonitorListener implements Listener {
 						// Town doesn't have enough funds.
 						townPrice = town.getAccount().getHoldingBalance();
 						try {
-							TownyUniverse.getInstance().getWarEvent().remove(attackerResident.getTown(), town);
+							war.getWarParticipants().remove(attackerResident.getTown(), town);
 						} catch (NotRegisteredException e) {
-							TownyUniverse.getInstance().getWarEvent().remove(town);
+							war.getWarParticipants().remove(town);
 						}
 					} else if (!TownySettings.isEcoClosedEconomyEnabled()){
 						TownyMessaging.sendPrefixedTownMessage(town, Translation.of("msg_player_couldnt_pay_player_town_bank_paying_instead", defenderResident.getName(), attackerResident.getName(), townPrice));

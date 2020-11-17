@@ -310,9 +310,9 @@ public class TownyCommand extends BaseCommand implements CommandExecutor {
 		if (args.length > 0) {
 			towny_war.clear();
 			if (args[0].equalsIgnoreCase("stats"))
-				towny_war.addAll(townyUniverse.getWarEvent().getStats());
+				towny_war.addAll(townyUniverse.getWarEvent(p).getScoreManager().getStats());
 			else if (args[0].equalsIgnoreCase("scores"))
-				towny_war.addAll(townyUniverse.getWarEvent().getScores(-1));
+				towny_war.addAll(townyUniverse.getWarEvent(p).getScoreManager().getScores(-1));
 			else if (args[0].equalsIgnoreCase("participants")) {
 				try {
 					parseWarParticipants(p, args);
@@ -398,7 +398,7 @@ public class TownyCommand extends BaseCommand implements CommandExecutor {
 //		output.clear();
 		
 		for (War war : TownyUniverse.getInstance().getWars()) {
-			war.outputParticipants();
+			war.getWarParticipants().outputParticipants(war.getWarType(), war.getWarName());
 		}
 	}	
 	

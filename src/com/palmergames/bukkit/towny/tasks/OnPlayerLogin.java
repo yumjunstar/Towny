@@ -158,7 +158,7 @@ public class OnPlayerLogin implements Runnable {
 			}
 
 			if (TownyAPI.getInstance().isWarTime())
-				universe.getWarEvent().sendScores(player, 3);
+				universe.getWarEvent(player).getScoreManager().sendScores(player, 3);
 		
 			//Schedule to setup default modes when the player has finished loading
 			if (BukkitTools.scheduleSyncDelayedTask(new SetDefaultModes(player.getName(), false), 1) == -1)

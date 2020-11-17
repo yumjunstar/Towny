@@ -8,9 +8,9 @@ import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.Coord;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.WorldCoord;
-import com.palmergames.bukkit.towny.war.eventwar.PlotAttackedEvent;
-import com.palmergames.bukkit.towny.war.eventwar.TownScoredEvent;
 import com.palmergames.bukkit.towny.war.eventwar.War;
+import com.palmergames.bukkit.towny.war.eventwar.events.PlotAttackedEvent;
+import com.palmergames.bukkit.towny.war.eventwar.events.TownScoredEvent;
 import com.palmergames.bukkit.util.BukkitTools;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -87,7 +87,7 @@ public class HUDManager implements Listener{
 				warUsers.remove(p);
 			else {
 				WarHUD.updateLocation(p, event.getTo());
-				WarHUD.updateAttackable(p, event.getTo(), TownyUniverse.getInstance().getWarEvent());
+				WarHUD.updateAttackable(p, event.getTo(), TownyUniverse.getInstance().getWarEvent(p));
 				WarHUD.updateHealth(p, event.getTo(), TownyUniverse.getInstance().getWarEvent(p));
 			}
 		} else if (permUsers.contains(p)) {
@@ -117,14 +117,15 @@ public class HUDManager implements Listener{
 	@EventHandler
 	public void onTownScored (TownScoredEvent event) {
 		//Update town score
-		War warEvent = TownyUniverse.getInstance().getWarEvent();
-		for (Resident r : event.getTown().getResidents()) {
+		War war = event.getWar();
+		for (Resident r : event.getTown().getResidents())
+		{
 			Player player = BukkitTools.getPlayer(r.getName());
 			if (player != null && warUsers.contains(player))
 				WarHUD.updateScore(player, event.getScore());
 		}
 		//Update top scores for all HUD users
-		String[] top = warEvent.getTopThree();
+		String[] top = war.getScoreManager().getTopThree();
 		for (Player p : warUsers)
 			WarHUD.updateTopScores(p, top);
 	}
