@@ -1,12 +1,12 @@
 package com.palmergames.bukkit.towny.war.eventwar;
 
 import java.util.Hashtable;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.FireworkEffect.Type;
 import org.bukkit.entity.Player;
 
+import com.palmergames.bukkit.towny.TownyAPI;
 import com.palmergames.bukkit.towny.TownyMessaging;
 import com.palmergames.bukkit.towny.TownySettings;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
@@ -18,6 +18,7 @@ import com.palmergames.bukkit.towny.object.Translation;
 import com.palmergames.bukkit.towny.object.WorldCoord;
 import com.palmergames.bukkit.towny.war.eventwar.events.PlotAttackedEvent;
 import com.palmergames.bukkit.util.Colors;
+import com.palmergames.util.KeyValueTable;
 
 public class WarZoneManager {
 	private War war;
@@ -170,6 +171,20 @@ public class WarZoneManager {
 			}
 		} else {
 			WarUtil.launchFireworkAtPlot (townBlock, attackerPlayer, Type.CREEPER, fwc);
+			// If there's more than one Town involved we want to award it to the town with the most players present.
+			if (wzd.getAttackerTowns().size() > 1) {
+				Hashtable<Town, Integer> attackerCount = new Hashtable<Town, Integer>();
+				for (Town town : wzd.getAttackerTowns()) {
+					for (Player player : wzd.getAttackers()) {
+						if (town.hasResident(TownyAPI.getInstance().getDataSource().getResident(player.getName())))
+							attackerCount.put(town, attackerCount.get(town) + 1);
+					}
+				}
+				KeyValueTable<Town, Integer> kvTable = new KeyValueTable<>(attackerCount);
+				kvTable.sortByValue();
+				kvTable.reverse();
+				attacker = kvTable.getKeyValues().get(0).key;
+			}
 			war.getWarParticipants().remove(attacker, townBlock);
 		}
 
