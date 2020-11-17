@@ -215,7 +215,7 @@ public class Towny extends JavaPlugin {
 			FlagWar.onDisable();
 		}
 
-		if (TownyAPI.getInstance().isWarTime()) {
+		if (TownyUniverse.getInstance().isWarTime()) {
 			for (War war : TownyUniverse.getInstance().getWars()) { // TODO: Some persistant saving for wars.
 				war.end(true);
 			}

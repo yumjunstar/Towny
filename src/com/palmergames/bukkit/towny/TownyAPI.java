@@ -469,7 +469,7 @@ public class TownyAPI {
      * @return true if the server is in war-time.
      */
     public boolean isWarTime() {
-        return !townyUniverse.getWars().isEmpty();
+        return townyUniverse.isWarTime();
     }
     
     /**
