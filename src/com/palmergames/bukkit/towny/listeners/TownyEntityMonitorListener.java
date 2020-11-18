@@ -309,10 +309,8 @@ public class TownyEntityMonitorListener implements Listener {
 						// Town doesn't have enough funds.
 						townPrice = town.getAccount().getHoldingBalance();
 						try {
-							war.getWarParticipants().remove(attackerResident.getTown(), town);
-						} catch (NotRegisteredException e) {
-							war.getWarParticipants().remove(town);
-						}
+							war.getWarZoneManager().remove(attackerResident.getTown(), town);
+						} catch (NotRegisteredException ignored) {}
 					} else if (!TownySettings.isEcoClosedEconomyEnabled()){
 						TownyMessaging.sendPrefixedTownMessage(town, Translation.of("msg_player_couldnt_pay_player_town_bank_paying_instead", defenderResident.getName(), attackerResident.getName(), townPrice));
 						town.getAccount().payTo(townPrice, attackerResident, String.format("Death Payment (War) (%s couldn't pay)", defenderResident.getName()));

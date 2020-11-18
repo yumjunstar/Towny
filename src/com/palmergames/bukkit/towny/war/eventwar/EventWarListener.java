@@ -79,7 +79,7 @@ public class EventWarListener implements Listener {
 					try {
 						if (victimRes.hasNation() && victimRes.isKing()) {
 							TownyMessaging.sendGlobalMessage(Translation.of("MSG_WAR_KING_KILLED", victimRes.getTown().getNation().getName()));
-							killerWar.getWarParticipants().remove(killerTown, victimRes.getTown().getNation()); // Remove the king's nation from the war.
+							killerWar.getWarZoneManager().remove(killerTown, victimRes.getTown().getNation()); // Remove the king's nation from the war.
 						}
 					} catch (NotRegisteredException ignored) {}
 				}
@@ -93,7 +93,7 @@ public class EventWarListener implements Listener {
 					try {
 						if (victimRes.hasTown() && victimRes.isMayor()) {
 							TownyMessaging.sendGlobalMessage(Translation.of("MSG_WAR_MAYOR_KILLED", victimRes.getTown().getName()));
-							killerWar.getWarParticipants().remove(killerTown, victimRes.getTown()); // Remove the mayor's town from the war.
+							killerWar.getWarZoneManager().remove(killerTown, victimRes.getTown()); // Remove the mayor's town from the war.
 						}
 					} catch (NotRegisteredException ignored) {}
 				}
