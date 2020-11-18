@@ -141,6 +141,14 @@ public class WarParticipants {
 			TownyMessaging.sendErrorMsg("The town " + town.getName() + " is already involved in a war. They will not take part in the war.");
 			return false;
 		}
+
+		/*
+		 * Homeblocks are absolutely required for a war.
+		 */
+		if (!town.hasHomeBlock()) {
+			TownyMessaging.sendErrorMsg("The town " + town.getName() + " does not have a homeblock. They will not take part in the war.");
+			return false;
+		}
 		
 		/*
 		 * Limit war to towns in worlds with war allowed.
@@ -151,16 +159,6 @@ public class WarParticipants {
 				return false;
 			}
 		} catch (TownyException ignored) {}
-		
-		/*
-		 * Homeblocks are absolutely required for a war with TownBlock HP.
-		 */
-		if (war.getWarType().hasTownBlockHP) {
-			if (!town.hasHomeBlock()) {
-				TownyMessaging.sendErrorMsg("The town " + town.getName() + " does not have a homeblock. They will not take part in the war.");
-				return false;
-			}
-		}
 		
 		/*
 		 * Even if TownBlock HP is not a factor we 
@@ -441,12 +439,7 @@ public class WarParticipants {
 	 * @param resident
 	 */
 	public void takeLife(Resident resident) {
-		if (residentLives.get(resident) == 0) {
-			remove(resident);
-			war.checkEnd();
-		} else {
-			residentLives.put(resident, residentLives.get(resident) - 1);
-		}
+		residentLives.put(resident, residentLives.get(resident) - 1);
 	}
 
 	private void sendEliminateMessage(String name) {

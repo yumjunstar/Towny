@@ -1,11 +1,12 @@
 package com.palmergames.bukkit.towny.war.eventwar;
 
 public enum WarType {
-	RIOT("Riot", true, true, true, true, 1, 100.0),
-	TOWNWAR("Town vs Town War", false, false, false, false, 5, 100.0),
-	CIVILWAR("National Civil War", false, false, false, false, 5, 100.0),
-	NATIONWAR("Nation vs Nation War", false, false, false, false, 10, 1000.0),
-	WORLDWAR("World War", true, false, false, false, -1, 10000.0);
+	// TODO: Make all these settings configurable.
+	RIOT("Riot", true, false, false, false, 5, 100.0, 1),
+	TOWNWAR("Town vs Town War", false, false, false, false, 5, 100.0, 2),
+	CIVILWAR("National Civil War", true, false, false, false, 5, 100.0, 3),
+	NATIONWAR("Nation vs Nation War", true, true, true, false, 10, 1000.0, 4),
+	WORLDWAR("World War", true, true, false, true, -1, 10000.0, 5);
 	
 	String name;
 	boolean hasTownBlockHP;
@@ -13,6 +14,7 @@ public enum WarType {
 	boolean hasTownBlocksSwitchTowns;
 	boolean hasTownConquering;
 	int lives;
+	int pointsPerKill;
 	double baseSpoils;
 	
 	/**
@@ -23,7 +25,7 @@ public enum WarType {
 	 * @param lives - How many lives each player gets before being removed from the war.
 	 * @param baseSpoils - How much money is added to the war.
 	 */
-	WarType(String name, boolean hasTownBlockHP, boolean hasMonarchDeath, boolean hasTownBlocksSwitchTowns, boolean hasTownConquering, int lives, double baseSpoils) {
+	WarType(String name, boolean hasTownBlockHP, boolean hasMonarchDeath, boolean hasTownBlocksSwitchTowns, boolean hasTownConquering, int lives, double baseSpoils, int pointsPerKill) {
 		this.name = name;
 		this.hasTownBlockHP = hasTownBlockHP;
 		this.hasMonarchDeath = hasMonarchDeath;
@@ -31,6 +33,7 @@ public enum WarType {
 		this.hasTownConquering = hasTownConquering;
 		this.lives = lives;
 		this.baseSpoils = baseSpoils;
+		this.pointsPerKill = pointsPerKill;
 	}
 	
 	public String getName() {

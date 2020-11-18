@@ -68,7 +68,7 @@ public class ScoreManager {
 	 * @param loc - {@link Location} of the death.
 	 */
 	private void townScored(Resident defender, Resident attacker, Location loc) {
-		int points = TownySettings.getWarPointsForKill();
+		int points = war.getWarType().pointsPerKill;
 		Town attackerTown = null;
 		Town defenderTown = null;
 		try {
