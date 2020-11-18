@@ -261,7 +261,6 @@ public class WarParticipants {
 
 		return true;
 	}
-
 	
 	/**
 	 * Verifies that for the WarType there are enough residents/towns/nations involved to have at least 2 sides.
@@ -449,8 +448,6 @@ public class WarParticipants {
 			residentLives.put(resident, residentLives.get(resident) - 1);
 		}
 	}
-	
-
 
 	private void sendEliminateMessage(String name) {
 		TownyMessaging.sendGlobalMessage(Translation.of("msg_war_eliminated", name));

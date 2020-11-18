@@ -48,7 +48,7 @@ public class EventWarListener implements Listener {
 			return; // One of the players is not in a war.
 		if (killerWar != victimWar)
 			return; // The wars are not the same war.
-		if (CombatUtil.isAlly(killerRes.getName(), victimRes.getName()))
+		if (CombatUtil.isAlly(killerRes.getName(), victimRes.getName()) && killerWar.getWarType() != WarType.RIOT)
 			return; // They are allies and this was a friendly fire kill.
 
 		// TODO: Potentially redo removal code to only accept residents and calculate Towns and Nations from them/Not throw NotRegisteredExceptions.
@@ -69,6 +69,10 @@ public class EventWarListener implements Listener {
 		switch (killerWar.getWarType()) {
 		
 			case RIOT:
+				if (victimLives == 0) {
+					TownyMessaging.sendPrefixedTownMessage(killerTown, victimRes.getName() + " has run out of lives and is eliminated from the Riot!");
+					killerWar.getWarParticipants().remove(victimRes);
+				}
 				break;
 			case NATIONWAR:
 			case WORLDWAR:
@@ -80,6 +84,9 @@ public class EventWarListener implements Listener {
 						if (victimRes.hasNation() && victimRes.isKing()) {
 							TownyMessaging.sendGlobalMessage(Translation.of("MSG_WAR_KING_KILLED", victimRes.getTown().getNation().getName()));
 							killerWar.getWarZoneManager().remove(victimRes.getTown().getNation(), killerTown); // Remove the king's nation from the war.
+						} else if (victimRes.hasTown() && victimRes.isMayor()) {
+							TownyMessaging.sendGlobalMessage(Translation.of("MSG_WAR_MAYOR_KILLED", victimRes.getTown().getName()));
+							killerWar.getWarZoneManager().remove(victimRes.getTown(), killerTown); // Remove the mayor's town from the war.
 						}
 					} catch (NotRegisteredException ignored) {}
 				}
@@ -101,7 +108,7 @@ public class EventWarListener implements Listener {
 		}	
 
 		/*
-		 * Give the killer some points.
+		 * Give the killer some points. TODO: Different points for different WarTypes.
 		 */
 		if (TownySettings.getWarPointsForKill() > 0){
 			killerWar.getScoreManager().residentScoredKillPoints(victimRes, killerRes, event.getLocation());
