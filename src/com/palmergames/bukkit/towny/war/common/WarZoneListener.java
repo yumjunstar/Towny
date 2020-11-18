@@ -216,7 +216,7 @@ public class WarZoneListener implements Listener {
 		/*
 		 * Is this a Town with a flag war WarZone?
 		 */
-		boolean inFlagWarTown = TownyAPI.getInstance().getTownyWorld(event.getBlock().getWorld().getName()).isWarZone(Coord.parseCoord(event.getLocation()));
+		boolean inFlagWarTown = TownyAPI.getInstance().getTownyWorld(event.getBlock().getWorld().getName()).isFlagWarZone(Coord.parseCoord(event.getLocation()));
 
 		/*
 		 * Is this in a Town with an Event War?

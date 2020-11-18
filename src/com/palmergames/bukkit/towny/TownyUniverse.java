@@ -1188,10 +1188,10 @@ public class TownyUniverse {
     }
 
     // Used by FlagWar only.
-    public void addWarZone(WorldCoord worldCoord) {
+    public void addFlagWarZone(WorldCoord worldCoord) {
         try {
         	if (worldCoord.getTownyWorld().isWarAllowed())
-            	worldCoord.getTownyWorld().addWarZone(worldCoord);
+            	worldCoord.getTownyWorld().addFlagWarZone(worldCoord);
         } catch (NotRegisteredException e) {
             // Not a registered world
         }
@@ -1199,9 +1199,9 @@ public class TownyUniverse {
     }
 
     // Used by FlagWar only.
-    public void removeWarZone(WorldCoord worldCoord) {
+    public void removeFlagWarZone(WorldCoord worldCoord) {
         try {
-            worldCoord.getTownyWorld().removeWarZone(worldCoord);
+            worldCoord.getTownyWorld().removeFlagWarZone(worldCoord);
         } catch (NotRegisteredException e) {
             // Not a registered world
         }

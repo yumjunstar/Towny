@@ -382,7 +382,7 @@ public class TownBlock extends TownyObject {
 	 */
 	public boolean isWarZone() {
 
-		return getWorld().isWarZone(getCoord());
+		return getWorld().isFlagWarZone(getCoord());
 	}
 
 	public boolean isJail() {

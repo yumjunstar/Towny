@@ -68,30 +68,27 @@ public class WarParticipants {
 		return totalResidentsAtStart;
 	}
 	
-	public void setNationsAtStart(int n) {
+	private void setNationsAtStart(int n) {
 		totalNationsAtStart = n;
 	}
 	
-	public void setTownsAtStart(int n) {
+	private void setTownsAtStart(int n) {
 		totalTownsAtStart = n;
 	}
 	
-	public void setResidentsAtStart(int n) {
+	private void setResidentsAtStart(int n) {
 		totalResidentsAtStart = n;
 	}
 	
 	public boolean has(Nation nation) {
-
 		return warringNations.contains(nation);
 	}
 
 	public boolean has(Town town) {
-
 		return warringTowns.contains(town);
 	}
 	
 	public boolean has(Resident resident) {
-
 		return warringResidents.contains(resident);
 	}
 	
@@ -209,11 +206,6 @@ public class WarParticipants {
 
 		return true;
 	}
-
-	public void add(Resident resident) {
-		
-		warringResidents.add(resident);
-	}
 	
 	public void addOnlineWarrior(Player player) {
 		onlineWarriors.add(player);
@@ -261,7 +253,6 @@ public class WarParticipants {
 				}
 				break;
 		}
-		
 
 		/*
 		 * Make sure that we have enough people/towns/nations involved
@@ -276,7 +267,6 @@ public class WarParticipants {
 		setTownsAtStart(warringTowns.size());
 		setResidentsAtStart(warringResidents.size());
 
-		
 		return true;
 	}
 
@@ -480,12 +470,6 @@ public class WarParticipants {
 		TownyUniverse townyUniverse = TownyUniverse.getInstance();
 		Nation losingNation = town.getNation();
 		
-		int towns = 0;
-		for (Town townsToCheck : warringTowns) {
-			if (townsToCheck.getNation().equals(losingNation))
-				towns++;
-		}
-
 		int fallenTownBlocks = 0;
 		warringTowns.remove(town);
 		for (TownBlock townBlock : town.getTownBlocks())
@@ -511,8 +495,7 @@ public class WarParticipants {
 			TownyMessaging.sendGlobalMessage(Translation.of("msg_war_town_has_been_conquered_by_nation_x_for_x_days", town.getName(), attacker.getNation(), TownySettings.getWarEventConquerTime()));
 		}
 		
-		if (towns == 1)
-			remove(losingNation);
+		remove(town);
 		war.checkEnd();
 	}
 	

@@ -789,18 +789,24 @@ public class TownyWorld extends TownyObject {
 	/*
 	 * Flag War Only.
 	 */
-	public void addWarZone(Coord coord) {
+	public void addFlagWarZone(Coord coord) {
 
-		if (!isWarZone(coord))
+		if (!isFlagWarZone(coord))
 			warZones.add(coord);
 	}
 
-	public void removeWarZone(Coord coord) {
+	/*
+	 * Flag War Only.
+	 */
+	public void removeFlagWarZone(Coord coord) {
 
 		warZones.remove(coord);
 	}
 
-	public boolean isWarZone(Coord coord) {
+	/*
+	 * Flag War Only.
+	 */
+	public boolean isFlagWarZone(Coord coord) {
 
 		return warZones.contains(coord);
 	}
