@@ -468,7 +468,7 @@ public class WarParticipants {
 	 */
 	public void remove(Town attacker, Town town) throws NotRegisteredException {
 		TownyUniverse townyUniverse = TownyUniverse.getInstance();
-		Nation losingNation = town.getNation();
+		boolean isCapital = town.isCapital();
 		
 		int fallenTownBlocks = 0;
 		warringTowns.remove(town);
@@ -479,20 +479,22 @@ public class WarParticipants {
 			}
 		war.getScoreManager().townScored(attacker, TownySettings.getWarPointsForTown(), town, fallenTownBlocks);
 		
-		if (TownySettings.getWarEventWinnerTakesOwnershipOfTown()) {			
-			town.setConquered(true);
-			town.setConqueredDays(TownySettings.getWarEventConquerTime());
-
-			// if losingNation is not a one-town nation then this.
-			town.removeNation();
-			try {
-				town.setNation(attacker.getNation());
-			} catch (AlreadyRegisteredException e) {
+		if (TownySettings.getWarEventWinnerTakesOwnershipOfTown()) {
+			if (isCapital && TownySettings.getWarEventWinnerTakesOwnershipOfTownsExcludesCapitals()) {
+				remove(town);
+				war.checkEnd();
+				return;
+			} else {
+				town.setConquered(true);
+				town.setConqueredDays(TownySettings.getWarEventConquerTime());
+				town.removeNation();
+				try {
+					town.setNation(attacker.getNation());
+				} catch (AlreadyRegisteredException e) {
+				}
+				townyUniverse.getDataSource().saveTown(town);
+				TownyMessaging.sendGlobalMessage(Translation.of("msg_war_town_has_been_conquered_by_nation_x_for_x_days", town.getName(), attacker.getNation(), TownySettings.getWarEventConquerTime()));
 			}
-			townyUniverse.getDataSource().saveTown(town);
-			townyUniverse.getDataSource().saveNation(attacker.getNation());
-			townyUniverse.getDataSource().saveNation(losingNation);
-			TownyMessaging.sendGlobalMessage(Translation.of("msg_war_town_has_been_conquered_by_nation_x_for_x_days", town.getName(), attacker.getNation(), TownySettings.getWarEventConquerTime()));
 		}
 		
 		remove(town);
