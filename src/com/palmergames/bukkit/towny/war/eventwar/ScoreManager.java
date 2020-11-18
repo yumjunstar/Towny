@@ -123,6 +123,25 @@ public class ScoreManager {
 		Bukkit.getServer().getPluginManager().callEvent(event);
 	}
 
+	void processScoreOnFallenTown(Town town, Town attacker) {
+		/*
+		 * Count warzones that fell when the town was felled.
+		 */
+		int fallenTownBlocks = 0;
+		for (TownBlock townBlock : town.getTownBlocks())
+			if (war.getWarZoneManager().isWarZone(townBlock.getWorldCoord()))
+				fallenTownBlocks++;
+		
+		// TODO: Another message for bulk townblock points from townblocks that did not fall until now. (Mirrors how nations' falling gives points for the eliminated towns.)
+		// TODO: A config option to not pay points for townblocks which were not directly captured preventing bulk points.
+		
+		/*
+		 * Award points for the captured town.
+		 */
+		townScored(attacker, TownySettings.getWarPointsForTown(), town, fallenTownBlocks);
+	}
+	
+
 	public void sendScores(Player player) {
 
 		sendScores(player, 10);

@@ -202,7 +202,7 @@ public class WarZoneManager {
 				kvTable.reverse();
 				attacker = kvTable.getKeyValues().get(0).key;
 			}
-			remove(attacker, townBlock);
+			remove(townBlock, attacker);
 		}
 
 		//Call PlotAttackedEvent to update scoreboard users
@@ -215,12 +215,12 @@ public class WarZoneManager {
 	 * 
 	 * Can result in removing a Town if the Town cannot pay the costs of losing the townblock,
 	 * or if the townblock is the homeblock of the Town.
-	 * 
-	 * @param attacker Town which had the most attackers when the townblock was felled.
 	 * @param townBlock townBlock which fell.
+	 * @param attacker Town which had the most attackers when the townblock was felled.
+	 * 
 	 * @throws NotRegisteredException - When a Towny Object does not exist.
 	 */
-	private void remove(Town attacker, TownBlock townBlock) throws NotRegisteredException {
+	private void remove(TownBlock townBlock, Town attacker) throws NotRegisteredException {
 
 		Town defenderTown = townBlock.getTown();
 
@@ -248,7 +248,7 @@ public class WarZoneManager {
 			if (TownySettings.isUsingEconomy() && !defenderTown.getAccount().payTo(TownySettings.getWartimeTownBlockLossPrice(), attacker, "War - TownBlock Loss")) {
 				TownyMessaging.sendPrefixedTownMessage(defenderTown, Translation.of("msg_war_town_ran_out_of_money"));
 				// Remove the town from the war. If this is a NationWar or WorldWar it will take down the Nation.
-				remove(attacker, defenderTown);
+				remove(defenderTown, attacker);
 				return;
 			} else
 				TownyMessaging.sendPrefixedTownMessage(defenderTown, Translation.of("msg_war_town_lost_money_townblock", TownyEconomyHandler.getFormattedBalance(TownySettings.getWartimeTownBlockLossPrice())));
@@ -261,7 +261,7 @@ public class WarZoneManager {
 			/*
 			 * Attacker has taken down a Town.
 			 */
-			remove(attacker, defenderTown);
+			remove(defenderTown, attacker);
 		} else {
 			// Remove this WorldCoord from the warZone hashtable.
 			remove(townBlock.getWorldCoord());
@@ -280,26 +280,19 @@ public class WarZoneManager {
 	 * Removes a Town from the war, attacked by a Town.
 	 * 
 	 * Can result in removing a Nation if the WarType is NationWar or WorldWar.
-	 * 
-	 * @param attacker Town which attacked.
 	 * @param town Town which is being removed from the war.
+	 * @param attacker Town which attacked.
+	 * 
 	 * @throws NotRegisteredException - When a Towny Object does not exist.
 	 */
-	public void remove(Town attacker, Town town) throws NotRegisteredException {
+	public void remove(Town town, Town attacker) throws NotRegisteredException {
  		boolean isCapital = town.isCapital();
 
-		/*
-		 * Award points for the captured town.
-		 */
-		int fallenTownBlocks = 0;
-		for (TownBlock townBlock : town.getTownBlocks())
-			if (war.getWarZoneManager().isWarZone(townBlock.getWorldCoord()))
-				fallenTownBlocks++;
-		
-		// TODO: Another message for bulk townblock points from townblocks that did not fall until now. (Mirrors how nations' falling gives points for the eliminated towns.)
-		// TODO: A config option to not pay points for townblocks which were not directly captured preventing bulk points.
-		
-		war.getScoreManager().townScored(attacker, TownySettings.getWarPointsForTown(), town, fallenTownBlocks);
+ 		/*
+ 		 * Process the scoring of points including townblocks that haven't 
+ 		 * and the town itself.
+ 		 */
+ 		war.getScoreManager().processScoreOnFallenTown(town, attacker);
 
 		/*
 		 * Free any players jailed in this Town.
@@ -307,7 +300,7 @@ public class WarZoneManager {
 		freeFromJail(town);
 		
 		/*
-		 * Deal with the various WarTypes' town-falling conditions.
+		 * Finally, deal with the various WarTypes' town-falling conditions.
 		 */
 		switch (war.getWarType()) {
 		
@@ -332,25 +325,41 @@ public class WarZoneManager {
 					if (TownySettings.getWarEventWinnerTakesOwnershipOfTownsExcludesCapitals()) 
 						towns.remove(town.getNation().getCapital());
 
+					for (Town fallenTown : towns) {
+				 		/*
+				 		 * Process the scoring of points including townblocks that haven't 
+				 		 * and the town itself.
+				 		 */
+				 		war.getScoreManager().processScoreOnFallenTown(fallenTown, attacker);
+					}
+					
 					// Conquer all of the towns (sometimes including the capital.)
 					conquer(towns, attacker.getNation());
 
-					// Remove the capital directly.
-					war.getWarParticipants().remove(town);
+					// Remove the capital directly, if it wasn't already removed in the conquering.
+					if (war.getWarParticipants().getTowns().contains(town))
+						war.getWarParticipants().remove(town);
 					
 					// Remove the rest of the towns.
-					remove(attacker, town.getNation());
+					remove(town.getNation(), attacker);
 
 					return;
 
 				// Not a capital, so conquer a single town.
 				} else {
+			 		/*
+			 		 * Process the scoring of points including townblocks that haven't 
+			 		 * and the town itself.
+			 		 */
+			 		war.getScoreManager().processScoreOnFallenTown(town, attacker);
+
 					
 					// Remove the town directly.
 					war.getWarParticipants().remove(town);
 					
 					// Conquer the single town.
 					conquer(town, attacker.getNation());
+					
 					return;
 				}
 				
@@ -360,18 +369,32 @@ public class WarZoneManager {
 			} else {
 				// It is a capital.
 				if (isCapital) {
+					
+			 		/*
+			 		 * Process the scoring of points including townblocks that haven't 
+			 		 * and the town itself.
+			 		 */
+			 		war.getScoreManager().processScoreOnFallenTown(town, attacker);
+
 					// Remove the capital directly.
 					war.getWarParticipants().remove(town);
 					
 					// Remove the rest of the towns.
-					remove(attacker, town.getNation());
+					remove(town.getNation(), attacker);
+					
 					return;
 					
 				// Not a capital, so remove a single town.
 				} else {
-					
+			 		/*
+			 		 * Process the scoring of points including townblocks that haven't 
+			 		 * and the town itself.
+			 		 */
+			 		war.getScoreManager().processScoreOnFallenTown(town, attacker);
+
 					// Remove the town directly.
 					war.getWarParticipants().remove(town);
+					
 					return;
 				}
 			}
@@ -392,24 +415,28 @@ public class WarZoneManager {
 	 * Only called when WarType is NationWar or WorldWar.
 	 * 
 	 * Called from:
-	 *    the EventWarListener's onPlayerKillsPlayer().
-	 *    the remove(attacker, Town) and a capital has fallen.
-	 * 
-	 * @param attacker Town which attacked the Nation.
+	 *    the EventWarListener's onPlayerKillsPlayer(). (In which case no towns have been removed from the WarParticipants yet.
+	 *    the remove(attacker, Town) and a capital has fallen. (In which case the capital is already removed from the WarParticipants.
 	 * @param nation Nation being removed from the war.
+	 * @param attacker Town which attacked the Nation.
+	 * 
 	 * @throws NotRegisteredException - When a Towny Object does not exist.
 	 */
-	public void remove(Town attacker, Nation nation) throws NotRegisteredException {
+	public void remove(Nation nation, Town attacker) throws NotRegisteredException {
 
-		// Award points to the attacking Town.
+		/*
+		 * Award points to the attacking Town for felling a nation.
+		 */
 		war.getScoreManager().townScored(attacker, TownySettings.getWarPointsForNation(), nation, 0);
 		
 		/*
 		 * Award points for each Town in the Nation which wasn't already removed from the war.
+		 * 
+		 * In the case of conquering: the towns will already be removed from the nation and war participants.
 		 */
 		for (Town town : nation.getTowns())
 			if (war.getWarParticipants().getTowns().contains(town))
-				remove(attacker, town);
+				remove(town, attacker);
 
 		TownyMessaging.sendGlobalMessage(Translation.of("msg_war_eliminated", nation));
 		war.getWarParticipants().remove(nation);
