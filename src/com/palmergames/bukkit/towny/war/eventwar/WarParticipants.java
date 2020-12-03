@@ -319,6 +319,9 @@ public class WarParticipants {
 	
 	/**
 	 * Used at war start and in the /towny war participants command.
+	 * 
+	 * @param warType WarType of the war.
+	 * @param name The formal name of the war.  
 	 */
 	public void outputParticipants(WarType warType, String name) {
 		List<String> warParticipants = new ArrayList<>();
@@ -436,7 +439,8 @@ public class WarParticipants {
 	
 	/**
 	 * Takes a life from the resident, removes them from the war if they have none remaining.
-	 * @param resident
+	 * 
+	 * @param resident Resident losing a life.
 	 */
 	public void takeLife(Resident resident) {
 		residentLives.put(resident, residentLives.get(resident) - 1);

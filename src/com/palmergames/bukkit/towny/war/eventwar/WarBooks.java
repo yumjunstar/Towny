@@ -15,6 +15,8 @@ public class WarBooks {
 
 	/**
 	 * Creates the first book given to players in the war.
+	 * 
+	 * @param war War instance.
 	 * @return String containing the raw text of what will become a book.
 	 */
 	public static String warStartBook(War war) {
