@@ -8,6 +8,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import com.palmergames.bukkit.towny.TownyMessaging;
 import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.event.player.PlayerKilledPlayerEvent;
+import com.palmergames.bukkit.towny.event.town.TownPreSetHomeBlockEvent;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Translation;
@@ -154,6 +155,14 @@ public class EventWarListener implements Listener {
 					}
 				} catch (NotRegisteredException ignored) {}
 				break;
+		}
+	}
+	
+	@EventHandler
+	public void onTownMoveHomeblock(TownPreSetHomeBlockEvent event) {
+		if (event.getTown().hasActiveWar()) {
+			event.setCancelled(true);
+			event.setCancelMessage(Translation.of("msg_war_cannot_do"));
 		}
 	}
 }
