@@ -1,18 +1,24 @@
-package com.palmergames.bukkit.towny.war.eventwar;
+package com.palmergames.bukkit.towny.war.eventwar.listeners;
 
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
+import com.palmergames.bukkit.towny.TownyAPI;
 import com.palmergames.bukkit.towny.TownyMessaging;
 import com.palmergames.bukkit.towny.TownyUniverse;
+import com.palmergames.bukkit.towny.event.PreNewTownEvent;
+import com.palmergames.bukkit.towny.event.TownPreClaimEvent;
 import com.palmergames.bukkit.towny.event.player.PlayerKilledPlayerEvent;
+import com.palmergames.bukkit.towny.event.town.TownLeaveEvent;
 import com.palmergames.bukkit.towny.event.town.TownPreSetHomeBlockEvent;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Translation;
 import com.palmergames.bukkit.towny.utils.CombatUtil;
+import com.palmergames.bukkit.towny.war.eventwar.War;
+import com.palmergames.bukkit.towny.war.eventwar.WarType;
 
 public class EventWarListener implements Listener {
 
@@ -26,6 +32,8 @@ public class EventWarListener implements Listener {
 		if (war == null)
 			return;
 		war.getWarParticipants().addOnlineWarrior(event.getPlayer());
+		war.getScoreManager().sendScores(event.getPlayer(), 3);
+		
 	}
 	
 	@EventHandler(ignoreCancelled = true)
@@ -165,5 +173,31 @@ public class EventWarListener implements Listener {
 			event.setCancelMessage(Translation.of("msg_war_cannot_do"));
 		}
 	}
+	
+	@EventHandler
+	public void onNewTown(PreNewTownEvent event) { // TODO: Make this configurable based on whether there is a world-war or not.
+		if (TownyAPI.getInstance().isWarTime()) {
+			event.setCancelled(true);
+			event.setCancelMessage(Translation.of("msg_war_cannot_do"));
+		}
+	}
+	
+	@EventHandler
+	public void onTownLeave(TownLeaveEvent event) { // TODO: Make this configurable based on whether there is a world-war or not.
+		if (TownyAPI.getInstance().isWarTime()) {
+			event.setCancelled(true);
+			event.setCancelMessage(Translation.of("msg_war_cannot_do"));
+		}
+	}
+	
+	@EventHandler
+	public void onTownClaim(TownPreClaimEvent event) {
+		if (event.getTown().hasActiveWar()) {
+			event.setCancelled(true);
+			event.setCancelMessage(Translation.of("msg_war_cannot_do"));
+		}
+			
+	}
+	
 }
 

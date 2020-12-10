@@ -10,11 +10,11 @@ public enum WarType {
 	
 	String name;
 	boolean hasTownBlockHP;
-	boolean hasMonarchDeath;
+	public boolean hasMonarchDeath;
 	boolean hasTownBlocksSwitchTowns;
 	boolean hasTownConquering;
-	int lives;
-	int pointsPerKill;
+	public int lives;
+	public int pointsPerKill;
 	double baseSpoils;
 	
 	/**

@@ -858,8 +858,6 @@ public class TownyAdminCommand extends BaseCommand implements CommandExecutor {
 			}
 
 			try {
-				if (TownyAPI.getInstance().isWarTime())
-					throw new TownyException(Translation.of("msg_war_cannot_do"));
 
 				List<WorldCoord> selection;
 				selection = AreaSelectionUtil.selectWorldCoordArea(null, new WorldCoord(player.getWorld().getName(), Coord.parseCoord(player)), split);

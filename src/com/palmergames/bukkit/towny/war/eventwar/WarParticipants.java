@@ -429,7 +429,7 @@ public class WarParticipants {
 	 * Called by remove(Town town)
 	 * @param resident
 	 */
-	void remove(Resident resident) {
+	public void remove(Resident resident) {
 		warringResidents.remove(resident);
 	}
 
