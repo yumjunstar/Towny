@@ -13,6 +13,7 @@ import com.palmergames.bukkit.towny.event.TownPreClaimEvent;
 import com.palmergames.bukkit.towny.event.player.PlayerKilledPlayerEvent;
 import com.palmergames.bukkit.towny.event.town.TownLeaveEvent;
 import com.palmergames.bukkit.towny.event.town.TownPreSetHomeBlockEvent;
+import com.palmergames.bukkit.towny.event.town.TownPreUnclaimCmdEvent;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Translation;
@@ -183,8 +184,8 @@ public class EventWarListener implements Listener {
 	}
 	
 	@EventHandler
-	public void onTownLeave(TownLeaveEvent event) { // TODO: Make this configurable based on whether there is a world-war or not.
-		if (TownyAPI.getInstance().isWarTime()) {
+	public void onTownLeave(TownLeaveEvent event) {
+		if (event.getTown().hasActiveWar()) {
 			event.setCancelled(true);
 			event.setCancelMessage(Translation.of("msg_war_cannot_do"));
 		}
@@ -196,8 +197,14 @@ public class EventWarListener implements Listener {
 			event.setCancelled(true);
 			event.setCancelMessage(Translation.of("msg_war_cannot_do"));
 		}
-			
 	}
-	
+
+	@EventHandler
+	public void onTownUnclaim(TownPreUnclaimCmdEvent event) {
+		if (event.getTown().hasActiveWar()) {
+			event.setCancelled(true);
+			event.setCancelMessage(Translation.of("msg_war_cannot_do"));
+		}
+	}
 }
 
