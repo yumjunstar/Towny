@@ -10,6 +10,7 @@ import com.palmergames.bukkit.towny.TownyMessaging;
 import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.event.PreNewTownEvent;
 import com.palmergames.bukkit.towny.event.TownPreClaimEvent;
+import com.palmergames.bukkit.towny.event.nation.NationPreTownLeaveEvent;
 import com.palmergames.bukkit.towny.event.player.PlayerKilledPlayerEvent;
 import com.palmergames.bukkit.towny.event.town.TownLeaveEvent;
 import com.palmergames.bukkit.towny.event.town.TownPreSetHomeBlockEvent;
@@ -201,6 +202,14 @@ public class EventWarListener implements Listener {
 
 	@EventHandler
 	public void onTownUnclaim(TownPreUnclaimCmdEvent event) {
+		if (event.getTown().hasActiveWar()) {
+			event.setCancelled(true);
+			event.setCancelMessage(Translation.of("msg_war_cannot_do"));
+		}
+	}
+
+	@EventHandler
+	public void onTownLeavesNation(NationPreTownLeaveEvent event) { // Also picks up towns being kicked using /n kick.
 		if (event.getTown().hasActiveWar()) {
 			event.setCancelled(true);
 			event.setCancelMessage(Translation.of("msg_war_cannot_do"));
