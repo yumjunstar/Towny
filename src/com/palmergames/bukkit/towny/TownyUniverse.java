@@ -1108,16 +1108,12 @@ public class TownyUniverse {
 	 */
 
     public War getWarEvent(Player player) {
-    	Resident resident = null;
-		try {
-			resident = getDataSource().getResident(player.getName());
-		} catch (NotRegisteredException ignored) {}
-		if (resident == null)
-			return null;
-        for (War war : getWars()) {
-        	if (war.getWarParticipants().has(resident))
-        		return war;
-        }
+    	Resident resident = getResident(player.getUniqueId());
+		if (resident != null)
+	        for (War war : getWars()) {
+	        	if (war.getWarParticipants().has(resident))
+	        		return war;
+	        }
         return null;
     }
     

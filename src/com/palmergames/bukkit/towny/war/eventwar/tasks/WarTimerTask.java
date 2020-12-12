@@ -51,8 +51,8 @@ public class WarTimerTask extends TownyTimerTask {
 			numPlayers += 1;
 			TownyMessaging.sendDebugMsg("[War] " + player.getName() + ": ");
 			try {
-				Resident resident = TownyUniverse.getInstance().getDataSource().getResident(player.getName());
-				if (!resident.hasTown() || !war.getWarParticipants().has(resident.getTown()))
+				Resident resident = TownyUniverse.getInstance().getResident(player.getUniqueId());
+				if (resident == null || !resident.hasTown() || !war.getWarParticipants().has(resident.getTown()))
 					continue;
 
 				WorldCoord worldCoord = plugin.getCache(player).getLastTownBlock();

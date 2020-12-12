@@ -9,7 +9,6 @@ import org.bukkit.Color;
 import org.bukkit.FireworkEffect.Type;
 import org.bukkit.entity.Player;
 
-import com.palmergames.bukkit.towny.TownyAPI;
 import com.palmergames.bukkit.towny.TownyEconomyHandler;
 import com.palmergames.bukkit.towny.TownyMessaging;
 import com.palmergames.bukkit.towny.TownySettings;
@@ -95,7 +94,7 @@ public class WarZoneManager {
 		String healString =  Colors.Gray + "[Heal](" + townBlock.getCoord().toString() + ") HP: " + hp + " (" + Colors.LightGreen + "+" + healthChange + Colors.Gray + ")";
 		TownyMessaging.sendPrefixedTownMessage(townBlock.getTown(), healString);
 		for (Player p : wzd.getDefenders()) {
-			if (com.palmergames.bukkit.towny.TownyUniverse.getInstance().getDataSource().getResident(p.getName()).getTown() != townBlock.getTown())
+			if (TownyUniverse.getInstance().getResident(p.getUniqueId()).getTown() != townBlock.getTown())
 				TownyMessaging.sendMessage(p, healString);
 		}
 		WarUtil.launchFireworkAtPlot (townBlock, wzd.getRandomDefender(), Type.BALL, Color.LIME);
@@ -132,7 +131,7 @@ public class WarZoneManager {
 	private void attackPlot(TownBlock townBlock, WarZoneData wzd) throws NotRegisteredException {
 
 		Player attackerPlayer = wzd.getRandomAttacker();
-		Resident attackerResident = com.palmergames.bukkit.towny.TownyUniverse.getInstance().getDataSource().getResident(attackerPlayer.getName());
+		Resident attackerResident = TownyUniverse.getInstance().getResident(attackerPlayer.getUniqueId());
 		Town attacker = attackerResident.getTown();
 
 		//Health, messaging, fireworks..
@@ -193,7 +192,7 @@ public class WarZoneManager {
 				Hashtable<Town, Integer> attackerCount = new Hashtable<Town, Integer>();
 				for (Town town : wzd.getAttackerTowns()) {
 					for (Player player : wzd.getAttackers()) {
-						if (town.hasResident(TownyAPI.getInstance().getDataSource().getResident(player.getName())))
+						if (town.hasResident(TownyUniverse.getInstance().getResident(player.getUniqueId())))
 							attackerCount.put(town, attackerCount.get(town) + 1);
 					}
 				}
