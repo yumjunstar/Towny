@@ -2318,7 +2318,7 @@ public class TownyAdminCommand extends BaseCommand implements CommandExecutor {
 			showWarHelp();
 		else if (split.length == 1) {
 			if (split[0].equalsIgnoreCase("worldwar")) {
-				for (Nation nation : TownyUniverse.getInstance().getNationsMap().values())
+				for (Nation nation : TownyUniverse.getInstance().getNations())
 					nations.add(nation);
 				new War(plugin,TownySettings.getWarTimeWarningDelay(), nations, null, null, WarType.WORLDWAR);
 				return;
