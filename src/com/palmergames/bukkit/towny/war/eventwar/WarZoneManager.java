@@ -236,7 +236,7 @@ public class WarZoneManager {
 		 */
 		if (!TownySettings.getWarEventWinnerTakesOwnershipOfTown() && TownySettings.getWarEventWinnerTakesOwnershipOfTownblocks()) {
 			townBlock.setTown(attacker);
-			TownyUniverse.getInstance().getDataSource().saveTownBlock(townBlock);
+			townBlock.save();
 		}		
 		
 		/*
@@ -508,7 +508,7 @@ public class WarZoneManager {
 	private void freeFromJail(List<Resident> residents) {
 		for (Resident resident : residents) {
 			resident.setJailed(false);
-			TownyUniverse.getInstance().getDataSource().saveResident(resident);
+			resident.save();
 		}
 	}
 
@@ -538,7 +538,7 @@ public class WarZoneManager {
 			town.setNation(nation);
 		} catch (AlreadyRegisteredException e) {
 		}
-		TownyUniverse.getInstance().getDataSource().saveTown(town);
+		town.save();
 		TownyMessaging.sendGlobalMessage(Translation.of("msg_war_town_has_been_conquered_by_nation_x_for_x_days", town.getName(), nation.getName(), TownySettings.getWarEventConquerTime()));
 		war.getWarParticipants().remove(town);
 	}
