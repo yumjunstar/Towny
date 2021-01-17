@@ -1,5 +1,6 @@
 package com.palmergames.bukkit.towny.object;
 
+import com.palmergames.bukkit.towny.Towny;
 import com.palmergames.bukkit.towny.TownyEconomyHandler;
 import com.palmergames.bukkit.towny.TownyMessaging;
 import com.palmergames.bukkit.towny.TownySettings;
@@ -279,7 +280,7 @@ public abstract class Government extends TownyObject implements BankEconomyHandl
 	public BankAccount getAccount() {
 		if (account == null) {
 			World world = getWorld();
-			account = new BankAccount(getUUID(), world, getBankCap());
+			account = new BankAccount(getUUID(), world, getBankCap(), this);
 			account.setAuditor(accountAuditor);
 		}
 
@@ -350,14 +351,15 @@ public abstract class Government extends TownyObject implements BankEconomyHandl
 
 	@SuppressWarnings("deprecation")
 	public OfflinePlayer getOfflinePlayer() {
-        if (this.offlinePlayer == null) {
+        if (this.offlinePlayer == null)
             this.offlinePlayer = Bukkit.getOfflinePlayer(getUUID().toString());
-        }
+
         return this.offlinePlayer;
 	}
 	
 	@SuppressWarnings("deprecation")
 	public void setOfflinePlayer() {
-		this.offlinePlayer = Bukkit.getOfflinePlayer(getUUID().toString());
+		if (this.offlinePlayer == null)
+			Bukkit.getScheduler().runTaskAsynchronously(Towny.getPlugin(), () -> this.offlinePlayer = Bukkit.getOfflinePlayer(getUUID().toString()));
 	}
 }

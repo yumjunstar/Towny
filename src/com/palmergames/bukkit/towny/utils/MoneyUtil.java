@@ -1,10 +1,14 @@
 package com.palmergames.bukkit.towny.utils;
 
+import java.util.UUID;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 
+import com.google.common.base.Charsets;
+import com.palmergames.bukkit.config.ConfigNodes;
 import com.palmergames.bukkit.towny.Towny;
 import com.palmergames.bukkit.towny.TownyAPI;
 import com.palmergames.bukkit.towny.TownyEconomyHandler;
@@ -217,7 +221,6 @@ public class MoneyUtil {
 	/**
 	 * Will attempt to set a town's debtBalance if their old DebtAccount is above 0 and exists.
 	 */
-	
 	@SuppressWarnings("deprecation")
 	public static void convertLegacyDebtAccounts() {
 		for (Town town : TownyUniverse.getInstance().getTowns()) {
@@ -240,41 +243,57 @@ public class MoneyUtil {
 	@SuppressWarnings("deprecation")
 	public static void convertLegacyBankAccounts() {
 		World world;
+		//Convert Town accounts to use OfflinePlayer/UUID.
 		for (Town town : TownyUniverse.getInstance().getTowns()) {
 			world = town.getWorld();
 			double balance = TownyEconomyHandler.getBalance(TownySettings.getTownAccountPrefix() + town.getName(), world);
 			
 			if (!TownySettings.isEconomyAsync()) {
-				TownyEconomyHandler.setBalance(town.getUUID(), balance, world);
-				TownyEconomyHandler.setBalance(TownySettings.getTownAccountPrefix() + town.getName(), 0.0, world);
+				TownyEconomyHandler.setBalance(town, balance, world);
+				TownyEconomyHandler.removeAccount(TownySettings.getTownAccountPrefix() + town.getName());
 			} else {
 				final double finalBal = balance;
 				final World finalWorld = world;
 				Bukkit.getScheduler().runTaskAsynchronously(Towny.getPlugin(), () -> {
-					TownyEconomyHandler.setBalance(town.getUUID(), finalBal, finalWorld);
-					TownyEconomyHandler.setBalance(TownySettings.getTownAccountPrefix() + town.getName(), 0.0, finalWorld);
+					TownyEconomyHandler.setBalance(town, finalBal, finalWorld);
+					TownyEconomyHandler.removeAccount(TownySettings.getTownAccountPrefix() + town.getName());
 				});
 			}
-			System.out.println("Town account "+ town.getName()+"converted with balance of " + balance);
+			System.out.println("Town account "+ town.getName()+" converted with balance of " + balance);
 		}
-		
+
+		//Convert Nation accounts to use OfflinePlayer/UUID.
 		for (Nation nation : TownyUniverse.getInstance().getNations()) {
 			world = nation.getWorld();
 			double balance = TownyEconomyHandler.getBalance(TownySettings.getNationAccountPrefix() + nation.getName(), world);
 		
 			if (!TownySettings.isEconomyAsync()) {
-				TownyEconomyHandler.setBalance(nation.getUUID(), balance, world);
-				TownyEconomyHandler.setBalance(TownySettings.getNationAccountPrefix() + nation.getName(), 0.0, world);
+				TownyEconomyHandler.setBalance(nation, balance, world);
+				TownyEconomyHandler.removeAccount(TownySettings.getNationAccountPrefix() + nation.getName());
 			} else {
 				final double finalBal = balance;
 				final World finalWorld = world;
 				Bukkit.getScheduler().runTaskAsynchronously(Towny.getPlugin(), () -> {
-					TownyEconomyHandler.setBalance(nation.getUUID(), finalBal, finalWorld);
-					TownyEconomyHandler.setBalance(TownySettings.getTownAccountPrefix() + nation.getName(), 0.0, finalWorld);
+					TownyEconomyHandler.setBalance(nation, finalBal, finalWorld);
+					TownyEconomyHandler.removeAccount(TownySettings.getTownAccountPrefix() + nation.getName());
 				});
 			}
-			System.out.println("Nation account "+ nation.getName()+"converted with balance of " + balance);
+			System.out.println("Nation account "+ nation.getName()+" converted with balance of " + balance);
 		}
+		
+		// Convert WarSpoilsAccount
+		world = Bukkit.getWorlds().get(0);
+		double balance = TownyEconomyHandler.getBalance("towny-war-chest", world);
+		TownyEconomyHandler.setBalance(UUID.nameUUIDFromBytes(("towny-war-chest").getBytes(Charsets.UTF_8)), balance, world);
+		TownyEconomyHandler.removeAccount("towny-war-chest");
+		System.out.println("Towny-War-Chest converted with balance of " + balance);
+		
+		// Convert ServerAccount
+		balance = TownyEconomyHandler.getBalance(TownySettings.getString(ConfigNodes.ECO_CLOSED_ECONOMY_SERVER_ACCOUNT), world);
+		TownyEconomyHandler.setBalance(UUID.nameUUIDFromBytes((TownySettings.getString(ConfigNodes.ECO_CLOSED_ECONOMY_SERVER_ACCOUNT).getBytes(Charsets.UTF_8))), balance, world);
+		TownyEconomyHandler.removeAccount(TownySettings.getString(ConfigNodes.ECO_CLOSED_ECONOMY_SERVER_ACCOUNT));
+		System.out.println("Towny-Server-Account converted with balance of " + balance);
+		
 		Towny.getPlugin().saveResource("legacyAccountsConverted.txt", false);		
 	}
 }

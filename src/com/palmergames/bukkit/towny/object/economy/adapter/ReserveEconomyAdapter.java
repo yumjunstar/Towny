@@ -15,7 +15,18 @@ public class ReserveEconomyAdapter implements EconomyAdapter {
 	public ReserveEconomyAdapter(EconomyAPI economy) {
 		this.economy = economy;
 	}
-	
+
+	@Override
+	public String getFormattedBalance(double balance) {
+		BigDecimal bd = BigDecimal.valueOf(balance);
+		return economy.format(bd);
+	}
+
+	/*
+	 * UUID Account manipulation Methods
+	 * @see com.palmergames.bukkit.towny.object.economy.Account
+	 */
+
 	@Override
 	public boolean add(UUID uuid, double amount, World world) {
 		BigDecimal bd = BigDecimal.valueOf(amount);
@@ -53,7 +64,50 @@ public class ReserveEconomyAdapter implements EconomyAdapter {
 		BigDecimal bd = BigDecimal.valueOf(amount);
 		return economy.setHoldingsDetail(uuid, bd, world.getName()).success();
 	}
-	
+
+	/*
+	 * Government BankAccount manipulation methods.
+	 * @see com.palmergames.bukkit.towny.object.economy.BankAccount
+	 */
+
+	@Override
+	public boolean add(Government government, double amount, World world) {
+		return add(government.getUUID(), amount, world);
+	}
+
+	@Override
+	public boolean subtract(Government government, double amount, World world) {
+		return subtract(government.getUUID(), amount, world);
+	}
+
+	@Override
+	public boolean hasAccount(Government government) {
+		return hasAccount(government.getUUID());
+	}
+
+	@Override
+	public double getBalance(Government government, World world) {
+		return getBalance(government.getUUID(), government.getWorld());
+	}
+
+	@Override
+	public void newAccount(Government government) {
+		newAccount(government.getUUID());
+	}
+
+	@Override
+	public void deleteAccount(Government government) {
+		deleteAccount(government.getUUID());
+	}
+
+	@Override
+	public boolean setBalance(Government government, double amount, World world) {
+		return setBalance(government.getUUID(), amount, world);
+	}
+
+	/*
+	 * Old accountName methods.
+	 */
 
 	@Override
 	public boolean add(String accountName, double amount, World world) {
@@ -92,49 +146,4 @@ public class ReserveEconomyAdapter implements EconomyAdapter {
 		BigDecimal bd = BigDecimal.valueOf(amount);
 		return economy.setHoldingsDetail(accountName, bd, world.getName()).success();
 	}
-
-	@Override
-	public String getFormattedBalance(double balance) {
-		BigDecimal bd = BigDecimal.valueOf(balance);
-		return economy.format(bd);
-	}
-
-	@Override
-	public boolean add(Government government, double amount, World world) {
-		BigDecimal bd = BigDecimal.valueOf(amount);
-		return economy.addHoldingsDetail(government.getUUID(), bd, world.getName()).success();
-	}
-
-	@Override
-	public boolean subtract(Government government, double amount, World world) {
-		BigDecimal bd = BigDecimal.valueOf(amount);
-		return economy.removeHoldingsDetail(government.getUUID(), bd, world.getName()).success();
-	}
-
-	@Override
-	public boolean hasAccount(Government government) {
-		return economy.hasAccountDetail(government.getUUID()).success();
-	}
-
-	@Override
-	public double getBalance(Government government, World world) {
-		return economy.getHoldings(government.getUUID(), government.getWorld().getName()).doubleValue();
-	}
-
-	@Override
-	public void newAccount(Government government) {
-		economy.createAccountDetail(government.getUUID()).success();		
-	}
-
-	@Override
-	public void deleteAccount(Government government) {
-		economy.deleteAccountDetail(government.getUUID());		
-	}
-
-	@Override
-	public boolean setBalance(Government government, double amount, World world) {
-		BigDecimal bd = BigDecimal.valueOf(amount);
-		return economy.setHoldingsDetail(government.getUUID(), bd, world.getName()).success();
-	}
-
 }

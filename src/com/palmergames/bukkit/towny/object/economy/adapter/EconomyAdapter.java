@@ -13,6 +13,14 @@ import com.palmergames.bukkit.towny.object.Government;
 public interface EconomyAdapter {
 
 	/**
+	 * Get's the proper formatting for a given balance.
+	 * 
+	 * @param balance The balance to format.
+	 * @return A string with the balance formatted.
+	 */
+	String getFormattedBalance(double balance);
+	
+	/**
 	 * Attempts to add money to an account.
 	 * 
 	 * @param uuid The uuid of the account.
@@ -134,14 +142,6 @@ public interface EconomyAdapter {
 	 */
 	boolean setBalance(Government government, double amount, World world);
 	
-	/**
-	 * Get's the proper formatting for a given balance.
-	 * 
-	 * @param balance The balance to format.
-	 * @return A string with the balance formatted.
-	 */
-	String getFormattedBalance(double balance);
-
 	/**
 	 * Attempts to add money to an account.
 	 * 

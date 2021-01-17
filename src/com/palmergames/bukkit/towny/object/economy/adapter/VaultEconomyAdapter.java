@@ -20,28 +20,28 @@ public class VaultEconomyAdapter implements EconomyAdapter {
 		this.economy = economy;
 	}
 
-	public OfflinePlayer getOP(UUID uuid) {
+	private OfflinePlayer getOP(UUID uuid) {
 		return Bukkit.getOfflinePlayer(uuid.toString());
 	}
+
+	@Override
+	public String getFormattedBalance(double balance) {
+		return economy.format(balance);
+	}
+
+	/*
+	 * UUID Account manipulation Methods
+	 * @see com.palmergames.bukkit.towny.object.economy.Account
+	 */
 	
 	@Override
 	public boolean add(UUID uuid, double amount, World world) {
 		return economy.depositPlayer(getOP(uuid), world.getName(), amount).type == EconomyResponse.ResponseType.SUCCESS;
 	}
-
-	@Override
-	public boolean add(Government gov, double amount, World world) {
-		return economy.depositPlayer(gov.getOfflinePlayer(), gov.getWorld().getName(), amount).type == EconomyResponse.ResponseType.SUCCESS;
-	}
-
+	
 	@Override
 	public boolean subtract(UUID uuid, double amount, World world) {
 		return economy.withdrawPlayer(getOP(uuid), world.getName(), amount).type == EconomyResponse.ResponseType.SUCCESS;
-	}
-
-	@Override
-	public boolean subtract(Government gov, double amount, World world) {
-		return economy.withdrawPlayer(gov.getOfflinePlayer(), gov.getWorld().getName(), amount).type == EconomyResponse.ResponseType.SUCCESS;
 	}
 	
 	@Override
@@ -50,37 +50,15 @@ public class VaultEconomyAdapter implements EconomyAdapter {
 	}
 	
 	@Override
-	public boolean hasAccount(Government gov) {
-		return economy.hasAccount(gov.getOfflinePlayer());
-	}
-
-	@Override
 	public double getBalance(UUID uuid, World world) {
-		return economy.getBalance(getOP(uuid));
+		return economy.getBalance(getOP(uuid), world.getName());
 	}
 	
-	@Override
-	public double getBalance(Government gov, World world) {
-		return economy.getBalance(gov.getOfflinePlayer(), world.getName());
-	}
-
 	@Override
 	public void newAccount(UUID uuid) {
 		economy.createPlayerAccount(getOP(uuid));
 	}
 	
-	@Override
-	public void newAccount(Government gov) {
-		economy.createPlayerAccount(gov.getOfflinePlayer(), gov.getWorld().getName());
-	}
-
-	@Override
-	public void deleteAccount(Government gov) {
-		if (!economy.hasAccount(gov.getOfflinePlayer()))
-			return;
-		economy.withdrawPlayer(gov.getOfflinePlayer(), economy.getBalance(gov.getOfflinePlayer()));
-	}
-
 	@Override
 	public void deleteAccount(UUID uuid) {
 		if (!economy.hasAccount(getOP(uuid)))
@@ -88,7 +66,7 @@ public class VaultEconomyAdapter implements EconomyAdapter {
 		
 		economy.withdrawPlayer(getOP(uuid), (economy.getBalance(getOP(uuid))));
 	}
-
+	
 	@Override
 	public boolean setBalance(UUID uuid, double amount, World world) {
 		double currentBalance = getBalance(uuid, world);
@@ -104,6 +82,43 @@ public class VaultEconomyAdapter implements EconomyAdapter {
 		return true;
 	}
 	
+	/*
+	 * Government BankAccount manipulation methods.
+	 * @see com.palmergames.bukkit.towny.object.economy.BankAccount
+	 */
+
+	@Override
+	public boolean add(Government gov, double amount, World world) {
+		return economy.depositPlayer(gov.getOfflinePlayer(), gov.getWorld().getName(), amount).type == EconomyResponse.ResponseType.SUCCESS;
+	}
+
+	@Override
+	public boolean subtract(Government gov, double amount, World world) {
+		return economy.withdrawPlayer(gov.getOfflinePlayer(), gov.getWorld().getName(), amount).type == EconomyResponse.ResponseType.SUCCESS;
+	}
+
+	@Override
+	public boolean hasAccount(Government gov) {
+		return economy.hasAccount(gov.getOfflinePlayer());
+	}
+
+	@Override
+	public double getBalance(Government gov, World world) {
+		return economy.getBalance(gov.getOfflinePlayer(), world.getName());
+	}
+
+	@Override
+	public void newAccount(Government gov) {
+		economy.createPlayerAccount(gov.getOfflinePlayer(), gov.getWorld().getName());
+	}
+
+	@Override
+	public void deleteAccount(Government gov) {
+		if (!economy.hasAccount(gov.getOfflinePlayer()))
+			return;
+		economy.withdrawPlayer(gov.getOfflinePlayer(), economy.getBalance(gov.getOfflinePlayer()));
+	}
+	
 	public boolean setBalance(Government gov, double amount, World world) {
 		double currentBalance = getBalance(gov, world);
 		double diff = Math.abs(amount - currentBalance);
@@ -117,6 +132,10 @@ public class VaultEconomyAdapter implements EconomyAdapter {
 		// If we get here, the balances are equal.
 		return true;
 	}
+	
+	/*
+	 * Old accountName methods.
+	 */
 	
 	@Override
 	public boolean add(String accountName, double amount, World world) {
@@ -168,8 +187,4 @@ public class VaultEconomyAdapter implements EconomyAdapter {
 		return true;
 	}
 
-	@Override
-	public String getFormattedBalance(double balance) {
-		return economy.format(balance);
-	}
 }

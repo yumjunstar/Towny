@@ -8,6 +8,8 @@ import com.palmergames.bukkit.towny.object.EconomyAccount;
 import com.palmergames.bukkit.towny.object.EconomyHandler;
 import com.palmergames.bukkit.towny.object.Nameable;
 import com.palmergames.bukkit.util.BukkitTools;
+
+import org.bukkit.Bukkit;
 import org.bukkit.World;
 
 import java.util.ArrayList;
@@ -43,6 +45,28 @@ public abstract class Account implements Nameable {
 		// ALL account transactions will route auditing data through this
 		// central auditor.
 		observers.add(GLOBAL_OBSERVER);
+	}
+
+	public UUID getUUID() {
+		return uuid;
+	}
+
+	public void setUUID(UUID uuid) {
+		this.uuid = uuid;
+	}
+
+	/**
+	 * Fetch the current world for this object
+	 *
+	 * @return Bukkit world for the object
+	 */
+	public World getBukkitWorld() {
+		return BukkitTools.getWorlds().get(0);
+	}
+	
+	@Override
+	public String getName() {
+		return Bukkit.getOfflinePlayer(getUUID()).getName();		
 	}
 	
 	// Template methods
@@ -103,18 +127,6 @@ public abstract class Account implements Nameable {
 	public boolean payTo(double amount, EconomyHandler collector, String reason) throws EconomyException {
 		return payTo(amount, collector.getAccount(), reason);
 	}
-	
-	protected boolean payToServer(double amount, String reason) throws EconomyException {
-		
-		// Put it back into the server.
-		return TownyEconomyHandler.addToServer(amount, getBukkitWorld());
-	}
-	
-	protected boolean payFromServer(double amount, String reason) throws EconomyException {
-		
-		// Remove it from the server economy.
-		return TownyEconomyHandler.subtractFromServer(amount, getBukkitWorld());
-	}
 
 	/**
 	 * Pays another account the specified funds.
@@ -133,14 +145,17 @@ public abstract class Account implements Nameable {
 
 		return withdraw(amount, reason) && collector.deposit(amount, reason);
 	}
+	
+	protected boolean payToServer(double amount, String reason) throws EconomyException {
 
-	/**
-	 * Fetch the current world for this object
-	 *
-	 * @return Bukkit world for the object
-	 */
-	public World getBukkitWorld() {
-		return BukkitTools.getWorlds().get(0);
+		// Put it back into the server.
+		return TownyEconomyHandler.addToServer(amount, getBukkitWorld());
+	}
+	
+	protected boolean payFromServer(double amount, String reason) throws EconomyException {
+		
+		// Remove it from the server economy.
+		return TownyEconomyHandler.subtractFromServer(amount, getBukkitWorld());
 	}
 
 	/**
@@ -213,14 +228,10 @@ public abstract class Account implements Nameable {
 		TownyEconomyHandler.removeAccount(getUUID());
 	}
 
-	public UUID getUUID() {
-		return uuid;
-	}
-
-	public void setUUID(UUID uuid) {
-		this.uuid = uuid;
-	}
-
+	/*
+	 * Auditors and Observers
+	 */
+	
 	/**
 	 * Gets the observers of this account.
 	 * 
@@ -282,7 +293,9 @@ public abstract class Account implements Nameable {
 		addObserver(auditor);
 	}
 	
-	// Legacy Compatibility Methods.
+	/*
+	 *  Legacy Compatibility Methods.
+	 */
 	
 	/**
 	 * @deprecated As of 0.96.1.11, use {@link #deposit(double, String)} instead.
