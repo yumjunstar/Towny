@@ -354,9 +354,8 @@ public abstract class Government extends TownyObject implements BankEconomyHandl
         return this.offlinePlayer;
 	}
 	
-	@SuppressWarnings("deprecation")
 	public void setOfflinePlayer() {
 		if (this.offlinePlayer == null)
-			Bukkit.getScheduler().runTaskAsynchronously(Towny.getPlugin(), () -> this.offlinePlayer = Bukkit.getOfflinePlayer(getUUID().toString()));
+			Bukkit.getScheduler().runTaskAsynchronously(Towny.getPlugin(), () -> this.offlinePlayer = Bukkit.getOfflinePlayer(getUUID()));
 	}
 }

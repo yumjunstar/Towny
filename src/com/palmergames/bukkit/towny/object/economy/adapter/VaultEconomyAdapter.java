@@ -21,7 +21,7 @@ public class VaultEconomyAdapter implements EconomyAdapter {
 	}
 
 	private OfflinePlayer getOP(UUID uuid) {
-		return Bukkit.getOfflinePlayer(uuid.toString());
+		return Bukkit.getOfflinePlayer(uuid);
 	}
 
 	@Override
@@ -51,7 +51,7 @@ public class VaultEconomyAdapter implements EconomyAdapter {
 	
 	@Override
 	public double getBalance(UUID uuid, World world) {
-		return economy.getBalance(getOP(uuid), world.getName());
+		return economy.getBalance(getOP(uuid));
 	}
 	
 	@Override
