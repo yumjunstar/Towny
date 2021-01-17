@@ -8,6 +8,8 @@ import com.palmergames.bukkit.towny.object.economy.adapter.ReserveEconomyAdapter
 import com.palmergames.bukkit.towny.object.Government;
 import com.palmergames.bukkit.towny.object.Transaction;
 import com.palmergames.bukkit.towny.object.TransactionType;
+import com.palmergames.bukkit.towny.object.economy.TownyServerAccount;
+import com.palmergames.bukkit.towny.object.economy.WarSpoilsAccount;
 import com.palmergames.bukkit.towny.object.economy.adapter.EconomyAdapter;
 import com.palmergames.bukkit.towny.object.economy.adapter.VaultEconomyAdapter;
 import com.palmergames.bukkit.util.BukkitTools;
@@ -37,10 +39,6 @@ public class TownyEconomyHandler {
 	
 	public enum EcoType {
 		NONE, VAULT, RESERVE
-	}
-	
-	public static String getServerAccount() {
-		return TownySettings.getString(ConfigNodes.ECO_CLOSED_ECONOMY_SERVER_ACCOUNT);
 	}
 	
 	public static UUID getUUIDServerAccount() {
@@ -574,5 +572,15 @@ public class TownyEconomyHandler {
 	public static void removeAccount(String accountName) {
 		economy.deleteAccount(accountName);
 	}
+
+
+	public static void setServerAccountBalance(double balance, World world) {
+		economy.setBalance(TownyServerAccount.getOfflinePlayer(), balance, world);
+	}
+	
+	public static void setWarSpoilsAccountBalance(double balance, World world) {
+		economy.setBalance(WarSpoilsAccount.getOfflinePlayer(), balance, world);
+	}
+
 
 }

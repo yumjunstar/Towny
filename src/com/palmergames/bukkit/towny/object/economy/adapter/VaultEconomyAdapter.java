@@ -133,6 +133,18 @@ public class VaultEconomyAdapter implements EconomyAdapter {
 		return true;
 	}
 	
+	@Override
+	public void setBalance(OfflinePlayer offlinePlayer, double amount, World world) {
+		double currentBalance = economy.getBalance(offlinePlayer);
+	
+		if (amount > currentBalance) {
+			economy.depositPlayer(offlinePlayer, amount);
+		} else if (amount < currentBalance) {
+			economy.withdrawPlayer(offlinePlayer, amount);
+		}
+	}
+	
+	
 	/*
 	 * Old accountName methods.
 	 */
@@ -186,5 +198,7 @@ public class VaultEconomyAdapter implements EconomyAdapter {
 		// If we get here, the balances are equal.
 		return true;
 	}
+
+
 
 }

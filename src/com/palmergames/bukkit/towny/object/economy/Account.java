@@ -38,7 +38,7 @@ public abstract class Account implements Nameable {
 	public Account(UUID uuid, World world) {
 		this.uuid = uuid;
 		this.world = world;
-		
+
 		// ALL account transactions will route auditing data through this
 		// central auditor.
 		observers.add(GLOBAL_OBSERVER);

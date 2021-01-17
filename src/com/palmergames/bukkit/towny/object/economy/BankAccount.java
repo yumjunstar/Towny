@@ -134,7 +134,30 @@ public class BankAccount extends Account {
 			return "Error";
 		}
 	}
+	
+	@Override
+	public boolean canPayFromHoldings(double amount) throws EconomyException {
+		return TownyEconomyHandler.hasEnough(government, amount, world);
+	}
 
+	@Override
+	protected boolean payToServer(double amount, String reason) throws EconomyException {
+		// Take money out.
+		TownyEconomyHandler.subtract(government, amount, world);
+		
+		// Put it back into the server.
+		return TownyEconomyHandler.addToServer(amount, world);
+	}
+	
+	@Override
+	protected boolean payFromServer(double amount, String reason) throws EconomyException {
+		// Put money in.
+		TownyEconomyHandler.add(government, amount, world);
+		
+		// Remove it from the server economy.
+		return TownyEconomyHandler.subtractFromServer(amount, world);
+	}
+	
 	@Override
 	public void removeAccount() {
 		TownyEconomyHandler.removeAccount(government);

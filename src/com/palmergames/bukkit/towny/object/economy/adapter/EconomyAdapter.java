@@ -2,6 +2,7 @@ package com.palmergames.bukkit.towny.object.economy.adapter;
 
 import java.util.UUID;
 
+import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 
 import com.palmergames.bukkit.towny.object.Government;
@@ -202,4 +203,6 @@ public interface EconomyAdapter {
 	 * @return A boolean indicating success.
 	 */
 	boolean setBalance(String accountName, double amount, World world);
+
+	void setBalance(OfflinePlayer offlinePlayer, double balance, World world);
 }

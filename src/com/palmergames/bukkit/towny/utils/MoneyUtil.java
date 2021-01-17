@@ -1,13 +1,10 @@
 package com.palmergames.bukkit.towny.utils;
 
-import java.util.UUID;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 
-import com.google.common.base.Charsets;
 import com.palmergames.bukkit.config.ConfigNodes;
 import com.palmergames.bukkit.towny.Towny;
 import com.palmergames.bukkit.towny.TownyAPI;
@@ -247,6 +244,8 @@ public class MoneyUtil {
 		for (Town town : TownyUniverse.getInstance().getTowns()) {
 			world = town.getWorld();
 			double balance = TownyEconomyHandler.getBalance(TownySettings.getTownAccountPrefix() + town.getName(), world);
+			if (balance == 0)
+				continue;
 			
 			if (!TownySettings.isEconomyAsync()) {
 				TownyEconomyHandler.setBalance(town, balance, world);
@@ -266,7 +265,9 @@ public class MoneyUtil {
 		for (Nation nation : TownyUniverse.getInstance().getNations()) {
 			world = nation.getWorld();
 			double balance = TownyEconomyHandler.getBalance(TownySettings.getNationAccountPrefix() + nation.getName(), world);
-		
+			if (balance == 0)
+				continue;
+
 			if (!TownySettings.isEconomyAsync()) {
 				TownyEconomyHandler.setBalance(nation, balance, world);
 				TownyEconomyHandler.removeAccount(TownySettings.getNationAccountPrefix() + nation.getName());
@@ -284,13 +285,13 @@ public class MoneyUtil {
 		// Convert WarSpoilsAccount
 		world = Bukkit.getWorlds().get(0);
 		double balance = TownyEconomyHandler.getBalance("towny-war-chest", world);
-		TownyEconomyHandler.setBalance(UUID.nameUUIDFromBytes(("towny-war-chest").getBytes(Charsets.UTF_8)), balance, world);
+		TownyEconomyHandler.setWarSpoilsAccountBalance(balance, world);
 		TownyEconomyHandler.removeAccount("towny-war-chest");
 		System.out.println("Towny-War-Chest converted with balance of " + balance);
 		
 		// Convert ServerAccount
 		balance = TownyEconomyHandler.getBalance(TownySettings.getString(ConfigNodes.ECO_CLOSED_ECONOMY_SERVER_ACCOUNT), world);
-		TownyEconomyHandler.setBalance(UUID.nameUUIDFromBytes((TownySettings.getString(ConfigNodes.ECO_CLOSED_ECONOMY_SERVER_ACCOUNT).getBytes(Charsets.UTF_8))), balance, world);
+		TownyEconomyHandler.setServerAccountBalance(balance, world);
 		TownyEconomyHandler.removeAccount(TownySettings.getString(ConfigNodes.ECO_CLOSED_ECONOMY_SERVER_ACCOUNT));
 		System.out.println("Towny-Server-Account converted with balance of " + balance);
 		

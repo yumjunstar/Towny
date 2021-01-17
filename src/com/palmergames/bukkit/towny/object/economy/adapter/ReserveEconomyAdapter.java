@@ -1,6 +1,8 @@
 package com.palmergames.bukkit.towny.object.economy.adapter;
 
 import net.tnemc.core.economy.EconomyAPI;
+
+import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 
 import com.palmergames.bukkit.towny.object.Government;
@@ -105,6 +107,11 @@ public class ReserveEconomyAdapter implements EconomyAdapter {
 		return setBalance(government.getUUID(), amount, world);
 	}
 
+	@Override
+	public void setBalance(OfflinePlayer offlinePlayer, double balance, World world) {
+		setBalance(offlinePlayer, balance, world);
+	}
+	
 	/*
 	 * Old accountName methods.
 	 */
