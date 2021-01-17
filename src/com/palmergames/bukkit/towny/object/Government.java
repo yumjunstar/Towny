@@ -349,11 +349,8 @@ public abstract class Government extends TownyObject implements BankEconomyHandl
 		player.openBook(BookFactory.makeBook("Bank History", getName(), pages));
 	}
 
-	@SuppressWarnings("deprecation")
 	public OfflinePlayer getOfflinePlayer() {
-        if (this.offlinePlayer == null)
-            this.offlinePlayer = Bukkit.getOfflinePlayer(getUUID().toString());
-
+		setOfflinePlayer();
         return this.offlinePlayer;
 	}
 	

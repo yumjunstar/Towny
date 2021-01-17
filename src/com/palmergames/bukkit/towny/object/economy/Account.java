@@ -7,9 +7,6 @@ import com.palmergames.bukkit.towny.exceptions.EconomyException;
 import com.palmergames.bukkit.towny.object.EconomyAccount;
 import com.palmergames.bukkit.towny.object.EconomyHandler;
 import com.palmergames.bukkit.towny.object.Nameable;
-import com.palmergames.bukkit.util.BukkitTools;
-
-import org.bukkit.Bukkit;
 import org.bukkit.World;
 
 import java.util.ArrayList;
@@ -30,7 +27,7 @@ public abstract class Account implements Nameable {
 	private final List<AccountObserver> observers = new ArrayList<>();
 	private AccountAuditor auditor;
 	
-	UUID uuid;
+	protected UUID uuid;
 	World world;
 	
 	public Account(UUID uuid) {
@@ -45,28 +42,6 @@ public abstract class Account implements Nameable {
 		// ALL account transactions will route auditing data through this
 		// central auditor.
 		observers.add(GLOBAL_OBSERVER);
-	}
-
-	public UUID getUUID() {
-		return uuid;
-	}
-
-	public void setUUID(UUID uuid) {
-		this.uuid = uuid;
-	}
-
-	/**
-	 * Fetch the current world for this object
-	 *
-	 * @return Bukkit world for the object
-	 */
-	public World getBukkitWorld() {
-		return BukkitTools.getWorlds().get(0);
-	}
-	
-	@Override
-	public String getName() {
-		return Bukkit.getOfflinePlayer(getUUID()).getName();		
 	}
 	
 	// Template methods
@@ -149,13 +124,13 @@ public abstract class Account implements Nameable {
 	protected boolean payToServer(double amount, String reason) throws EconomyException {
 
 		// Put it back into the server.
-		return TownyEconomyHandler.addToServer(amount, getBukkitWorld());
+		return TownyEconomyHandler.addToServer(amount, world);
 	}
 	
 	protected boolean payFromServer(double amount, String reason) throws EconomyException {
 		
 		// Remove it from the server economy.
-		return TownyEconomyHandler.subtractFromServer(amount, getBukkitWorld());
+		return TownyEconomyHandler.subtractFromServer(amount, world);
 	}
 
 	/**
@@ -190,10 +165,10 @@ public abstract class Account implements Nameable {
 	 */
 	public double getHoldingBalance() throws EconomyException {
 		try {
-			return TownyEconomyHandler.getBalance(getUUID(), getBukkitWorld());
+			return TownyEconomyHandler.getBalance(uuid, world);
 		} catch (NoClassDefFoundError e) {
 			e.printStackTrace();
-			throw new EconomyException("Economy error getting holdings for " + getUUID());
+			throw new EconomyException("Economy error getting holdings for " + uuid);
 		}
 	}
 
@@ -205,7 +180,7 @@ public abstract class Account implements Nameable {
 	 * @throws EconomyException if failure
 	 */
 	public boolean canPayFromHoldings(double amount) throws EconomyException {
-		return TownyEconomyHandler.hasEnough(getUUID(), amount, getBukkitWorld());
+		return TownyEconomyHandler.hasEnough(uuid, amount, world);
 	}
 
 	/**
@@ -225,7 +200,7 @@ public abstract class Account implements Nameable {
 	 * Attempt to delete the economy account.
 	 */
 	public void removeAccount() {
-		TownyEconomyHandler.removeAccount(getUUID());
+		TownyEconomyHandler.removeAccount(uuid);
 	}
 
 	/*

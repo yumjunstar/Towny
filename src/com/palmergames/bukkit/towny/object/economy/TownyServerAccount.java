@@ -17,12 +17,12 @@ public class TownyServerAccount extends Account {
 
 	@Override
 	protected boolean addMoney(double amount) {
-		return TownyEconomyHandler.add(getUUID(), amount, world);
+		return TownyEconomyHandler.add(uuid, amount, world);
 	}
 
 	@Override
 	protected boolean subtractMoney(double amount) {
-		return TownyEconomyHandler.subtract(getUUID(), amount, world);
+		return TownyEconomyHandler.subtract(uuid, amount, world);
 	}
 
 	@Override

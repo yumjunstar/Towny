@@ -43,6 +43,14 @@ public class BankAccount extends Account {
 	public String getName() {
 		return government.getName();
 	}
+	
+	public UUID getUUID() {
+		return government.getUUID();
+	}
+	
+	public World getBukkitWorld() {
+		return world;
+	}
 
 	/*
 	 * BankAccount Balance Methods.

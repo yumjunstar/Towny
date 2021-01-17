@@ -1,5 +1,6 @@
 package com.palmergames.bukkit.towny;
 
+import com.google.common.base.Charsets;
 import com.palmergames.bukkit.config.ConfigNodes;
 import com.palmergames.bukkit.towny.event.TownyPreTransactionEvent;
 import com.palmergames.bukkit.towny.event.TownyTransactionEvent;
@@ -43,8 +44,12 @@ public class TownyEconomyHandler {
 	}
 	
 	public static UUID getUUIDServerAccount() {
-		return UUID.fromString(TownySettings.getString(ConfigNodes.ECO_CLOSED_ECONOMY_SERVER_ACCOUNT));
+		return UUID.nameUUIDFromBytes(TownySettings.getString(ConfigNodes.ECO_CLOSED_ECONOMY_SERVER_ACCOUNT).getBytes(Charsets.UTF_8));
 	}
+	
+	public static UUID getUUIDWarChestAccount() {
+		return UUID.nameUUIDFromBytes(("towny-war-chest").getBytes(Charsets.UTF_8));
+	}	
 
 	public static void initialize(Towny plugin) {
 		TownyEconomyHandler.plugin = plugin;
