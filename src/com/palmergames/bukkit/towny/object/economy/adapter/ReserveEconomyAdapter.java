@@ -3,7 +3,10 @@ package com.palmergames.bukkit.towny.object.economy.adapter;
 import net.tnemc.core.economy.EconomyAPI;
 import org.bukkit.World;
 
+import com.palmergames.bukkit.towny.object.Government;
+
 import java.math.BigDecimal;
+import java.util.UUID;
 
 public class ReserveEconomyAdapter implements EconomyAdapter {
 	
@@ -12,6 +15,45 @@ public class ReserveEconomyAdapter implements EconomyAdapter {
 	public ReserveEconomyAdapter(EconomyAPI economy) {
 		this.economy = economy;
 	}
+	
+	@Override
+	public boolean add(UUID uuid, double amount, World world) {
+		BigDecimal bd = BigDecimal.valueOf(amount);
+		return economy.addHoldingsDetail(uuid, bd, world.getName()).success();
+	}
+
+	@Override
+	public boolean subtract(UUID uuid, double amount, World world) {
+		BigDecimal bd = BigDecimal.valueOf(amount);
+		return economy.removeHoldingsDetail(uuid, bd, world.getName()).success();
+	}
+
+	@Override
+	public boolean hasAccount(UUID uuid) {
+		return economy.hasAccountDetail(uuid).success();
+	}
+
+	@Override
+	public double getBalance(UUID uuid, World world) {
+		return economy.getHoldings(uuid, world.getName()).doubleValue();
+	}
+
+	@Override
+	public void newAccount(UUID uuid) {
+		economy.createAccountDetail(uuid).success();
+	}
+
+	@Override
+	public void deleteAccount(UUID uuid) {
+		economy.deleteAccountDetail(uuid);
+	}
+
+	@Override
+	public boolean setBalance(UUID uuid, double amount, World world) {
+		BigDecimal bd = BigDecimal.valueOf(amount);
+		return economy.setHoldingsDetail(uuid, bd, world.getName()).success();
+	}
+	
 
 	@Override
 	public boolean add(String accountName, double amount, World world) {
@@ -56,4 +98,43 @@ public class ReserveEconomyAdapter implements EconomyAdapter {
 		BigDecimal bd = BigDecimal.valueOf(balance);
 		return economy.format(bd);
 	}
+
+	@Override
+	public boolean add(Government government, double amount, World world) {
+		BigDecimal bd = BigDecimal.valueOf(amount);
+		return economy.addHoldingsDetail(government.getUUID(), bd, world.getName()).success();
+	}
+
+	@Override
+	public boolean subtract(Government government, double amount, World world) {
+		BigDecimal bd = BigDecimal.valueOf(amount);
+		return economy.removeHoldingsDetail(government.getUUID(), bd, world.getName()).success();
+	}
+
+	@Override
+	public boolean hasAccount(Government government) {
+		return economy.hasAccountDetail(government.getUUID()).success();
+	}
+
+	@Override
+	public double getBalance(Government government, World world) {
+		return economy.getHoldings(government.getUUID(), government.getWorld().getName()).doubleValue();
+	}
+
+	@Override
+	public void newAccount(Government government) {
+		economy.createAccountDetail(government.getUUID()).success();		
+	}
+
+	@Override
+	public void deleteAccount(Government government) {
+		economy.deleteAccountDetail(government.getUUID());		
+	}
+
+	@Override
+	public boolean setBalance(Government government, double amount, World world) {
+		BigDecimal bd = BigDecimal.valueOf(amount);
+		return economy.setHoldingsDetail(government.getUUID(), bd, world.getName()).success();
+	}
+
 }

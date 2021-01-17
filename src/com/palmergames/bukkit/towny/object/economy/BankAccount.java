@@ -6,7 +6,11 @@ import com.palmergames.bukkit.towny.TownyMessaging;
 import com.palmergames.bukkit.towny.TownySettings;
 import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.exceptions.EconomyException;
+import com.palmergames.bukkit.towny.object.Government;
 import com.palmergames.bukkit.towny.object.Town;
+
+import java.util.UUID;
+
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.jetbrains.annotations.Nullable;
@@ -23,8 +27,8 @@ public class BankAccount extends Account {
 	private double debtCap;
 	private CachedBalance cachedBalance = null; 
 
-	public BankAccount(String name, World world, double balanceCap) {
-		super(name, world);
+	public BankAccount(UUID uuid, World world, double balanceCap) {
+		super(uuid, world);
 		this.balanceCap = balanceCap;
 		try {
 			this.cachedBalance = new CachedBalance(getHoldingBalance());
@@ -60,7 +64,7 @@ public class BankAccount extends Account {
 	 */
 	public double getDebtCap() {
 		if (TownySettings.isDebtCapDeterminedByTownLevel()) { // town_level debtCapModifier * debt_cap.override.
-			String townName = this.getName().replace(TownySettings.getTownAccountPrefix(), "");
+			String townName = TownyUniverse.getInstance().getTown(getUUID()).getName();
 			Town town = getTown();
 			
 			// For whatever reason, this just errors and continues
@@ -107,7 +111,7 @@ public class BankAccount extends Account {
 
 				if(amountInDebt <= getDebtCap()) {
 					// Empty out account.
-					boolean success = TownyEconomyHandler.setBalance(getName(), 0, world);
+					boolean success = TownyEconomyHandler.setBalance(getGov(), 0, world);
 					success &= addDebt(amountInDebt);
 
 					return success;
@@ -120,7 +124,7 @@ public class BankAccount extends Account {
 		}
 
 		// Otherwise continue like normal.
-		return TownyEconomyHandler.subtract(getName(), amount, world);
+		return TownyEconomyHandler.subtract(getGov(), amount, world);
 	}
 
 	@Override
@@ -140,7 +144,7 @@ public class BankAccount extends Account {
 		}
 
 		// Otherwise continue like normal.
-		return TownyEconomyHandler.add(getName(), amount, world);
+		return TownyEconomyHandler.add(getGov(), amount, world);
 	}
 
 	/**
@@ -178,7 +182,7 @@ public class BankAccount extends Account {
 			//Clear debt account
 			setTownDebt(0.0);
 			//Set positive balance in regular account
-			TownyEconomyHandler.setBalance(getName(), netMoney, world);
+			TownyEconomyHandler.setBalance(getGov(), netMoney, world);
 			return true;
 		} else {
 			setTownDebt(getTownDebt() - amount);
@@ -192,10 +196,10 @@ public class BankAccount extends Account {
 			if (isBankrupt()) {
 				return getTownDebt() * -1;
 			}
-			return TownyEconomyHandler.getBalance(getName(), getBukkitWorld());
+			return TownyEconomyHandler.getBalance(getGov(), getBukkitWorld());
 		} catch (NoClassDefFoundError e) {
 			e.printStackTrace();
-			throw new EconomyException("Economy error getting holdings for " + getName());
+			throw new EconomyException("Economy error getting holdings for " + getUUID());
 		}
 	}
 
@@ -213,7 +217,7 @@ public class BankAccount extends Account {
 
 	@Override
 	public void removeAccount() {
-		TownyEconomyHandler.removeAccount(getName());
+		TownyEconomyHandler.removeAccount(getGov());
 	}
 
 	private class CachedBalance {
@@ -270,7 +274,7 @@ public class BankAccount extends Account {
 	 * return true if this BankAcount is one belonging to a Town.
 	 */
 	private boolean isTownAccount() {
-		return this.getName().startsWith(TownySettings.getTownAccountPrefix());
+		return TownyUniverse.getInstance().getTown(getUUID()) != null;
 	}
 	
 	/**
@@ -280,7 +284,7 @@ public class BankAccount extends Account {
 	private Town getTown() {
 		Town town = null;
 		if (isTownAccount()) 
-			town = TownyUniverse.getInstance().getTown(this.getName().replace(TownySettings.getTownAccountPrefix(), ""));
+			town = TownyUniverse.getInstance().getTown(getUUID());
 		return town;
 	}
 	
@@ -292,4 +296,20 @@ public class BankAccount extends Account {
 		getTown().setDebtBalance(amount);
 		getTown().save();
 	}
+
+
+	@Override
+	public String getName() {
+		if (isTownAccount())
+			return getTown().getName();
+		else return TownyUniverse.getInstance().getNation(getUUID()).getName();
+	}
+	
+
+	private Government getGov() {
+		if (isTownAccount())
+			return getTown();
+		else return TownyUniverse.getInstance().getNation(getUUID());
+	}
+
 }

@@ -13,6 +13,7 @@ import org.bukkit.World;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Used to facilitate transactions regarding money, 
@@ -27,16 +28,16 @@ public abstract class Account implements Nameable {
 	private final List<AccountObserver> observers = new ArrayList<>();
 	private AccountAuditor auditor;
 	
-	String name;
+	UUID uuid;
 	World world;
 	
-	public Account(String name) {
-		this.name = name;
+	public Account(UUID uuid) {
+		this.uuid = uuid;
 		observers.add(GLOBAL_OBSERVER);
 	}
 	
-	public Account(String name, World world) {
-		this.name = name;
+	public Account(UUID uuid, World world) {
+		this.uuid = uuid;
 		this.world = world;
 		
 		// ALL account transactions will route auditing data through this
@@ -174,10 +175,10 @@ public abstract class Account implements Nameable {
 	 */
 	public double getHoldingBalance() throws EconomyException {
 		try {
-			return TownyEconomyHandler.getBalance(getName(), getBukkitWorld());
+			return TownyEconomyHandler.getBalance(getUUID(), getBukkitWorld());
 		} catch (NoClassDefFoundError e) {
 			e.printStackTrace();
-			throw new EconomyException("Economy error getting holdings for " + getName());
+			throw new EconomyException("Economy error getting holdings for " + getUUID());
 		}
 	}
 
@@ -189,7 +190,7 @@ public abstract class Account implements Nameable {
 	 * @throws EconomyException if failure
 	 */
 	public boolean canPayFromHoldings(double amount) throws EconomyException {
-		return TownyEconomyHandler.hasEnough(getName(), amount, getBukkitWorld());
+		return TownyEconomyHandler.hasEnough(getUUID(), amount, getBukkitWorld());
 	}
 
 	/**
@@ -209,16 +210,15 @@ public abstract class Account implements Nameable {
 	 * Attempt to delete the economy account.
 	 */
 	public void removeAccount() {
-		TownyEconomyHandler.removeAccount(getName());
+		TownyEconomyHandler.removeAccount(getUUID());
 	}
 
-	@Override
-	public String getName() {
-		return name;
+	public UUID getUUID() {
+		return uuid;
 	}
 
-	public void setName(String name) {
-		this.name = name;
+	public void setUUID(UUID uuid) {
+		this.uuid = uuid;
 	}
 
 	/**

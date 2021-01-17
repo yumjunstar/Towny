@@ -4,6 +4,7 @@ import com.palmergames.bukkit.config.ConfigNodes;
 import com.palmergames.bukkit.towny.event.TownyPreTransactionEvent;
 import com.palmergames.bukkit.towny.event.TownyTransactionEvent;
 import com.palmergames.bukkit.towny.object.economy.adapter.ReserveEconomyAdapter;
+import com.palmergames.bukkit.towny.object.Government;
 import com.palmergames.bukkit.towny.object.Transaction;
 import com.palmergames.bukkit.towny.object.TransactionType;
 import com.palmergames.bukkit.towny.object.economy.adapter.EconomyAdapter;
@@ -14,9 +15,7 @@ import com.palmergames.bukkit.util.Colors;
 import net.milkbowl.vault.economy.Economy;
 import net.tnemc.core.Reserve;
 
-import org.bukkit.Bukkit;
 import org.bukkit.World;
-import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
 
@@ -41,6 +40,10 @@ public class TownyEconomyHandler {
 	
 	public static String getServerAccount() {
 		return TownySettings.getString(ConfigNodes.ECO_CLOSED_ECONOMY_SERVER_ACCOUNT);
+	}
+	
+	public static UUID getUUIDServerAccount() {
+		return UUID.fromString(TownySettings.getString(ConfigNodes.ECO_CLOSED_ECONOMY_SERVER_ACCOUNT));
 	}
 
 	public static void initialize(Towny plugin) {
@@ -125,35 +128,6 @@ public class TownyEconomyHandler {
 		return false;
 	}
 
-	
-	// This was removed because:
-	// 1.) Only we should handle concrete account classes
-	// 2.) This was unused anyways.
-//	/**
-//	 * Returns the relevant player's economy account
-//	 * 
-//	 * @param accountName - Name of the player's account (usually playername)
-//	 * @return - The relevant player's economy account
-//	 */
-//	@SuppressWarnings("unused")
-//	private static Object getEconomyAccount(String accountName) {
-//
-//		switch (Type) {
-//
-//		case RESERVE:
-//			if(reserveEconomy instanceof ExtendedEconomyAPI)
-//				return ((ExtendedEconomyAPI)reserveEconomy).getAccount(accountName);
-//			break;
-//		
-//		default:
-//			break;
-//
-//		}
-//
-//		return null;
-//	}
-	
-	// We don't even use UUID's right now?
 	/**
 	 * Check if account exists
 	 * 
@@ -161,29 +135,37 @@ public class TownyEconomyHandler {
 	 * @return true if the account exists
 	 */
 	public static boolean hasEconomyAccount(UUID uniqueId) {
-//		switch (Type) {
-//
-//		case RESERVE:
-//		    return reserveEconomy.hasAccountDetail(uniqueId).success();
-//			
-//		case VAULT:
-//			return vaultEconomy.hasAccount(Bukkit.getOfflinePlayer(uniqueId));
-//			
-//		default:
-//			break;
-//
-//		}
-//
-		return false;
+
+		return economy.hasAccount(uniqueId);
 	}
 
+	/**
+	 * Check if account exists
+	 * 
+	 * @param gov Government owning this account.
+	 * @return true if the account exists
+	 */
+	public static boolean hasEconomyAccount(Government gov) {
+
+		return economy.hasAccount(gov);
+	}
+	
 	/**
 	 * Attempt to delete the economy account.
 	 * 
 	 * @param accountName name of the account to delete
 	 */
+	@Deprecated
 	public static void removeAccount(String accountName) {
 		economy.deleteAccount(accountName);
+	}
+	
+	public static void removeAccount(UUID uuid) {
+		economy.deleteAccount(uuid);
+	}
+	
+	public static void removeAccount(Government gov) {
+		economy.deleteAccount(gov);
 	}
 
 	/**
@@ -193,11 +175,22 @@ public class TownyEconomyHandler {
 	 * @param world name of world to check in (for TNE Reserve)   
 	 * @return double containing the total in the account
 	 */
+	@Deprecated
 	public static double getBalance(String accountName, World world) {
 		checkNewAccount(accountName);
 		return economy.getBalance(accountName, world);
 	}
 
+	public static double getBalance(UUID uuid, World world) {
+		checkNewAccount(uuid);
+		return economy.getBalance(uuid, world);
+	}
+	
+	public static double getBalance(Government gov, World world) {
+		checkNewAccount(gov);
+		return economy.getBalance(gov, world);
+	}
+	
 	/**
 	 * Returns true if the account has enough money
 	 * 
@@ -206,23 +199,113 @@ public class TownyEconomyHandler {
 	 * @param world name of the world to check in (for TNE Reserve)   
 	 * @return true if there is enough in the account
 	 */
+	@Deprecated
 	public static boolean hasEnough(String accountName, double amount, World world) {
 		return getBalance(accountName, world) >= amount;
 	}
 	
-	private static boolean runPreChecks(Transaction transaction, String accountName) {
+	public static boolean hasEnough(UUID uuid, double amount, World world) {
+		return getBalance(uuid, world) >= amount;
+	}
+	
+	public static boolean hasEnough(Government gov, double amount, World world) {
+		return getBalance(gov, world) >= amount;
+	}
+	
+	private static boolean runPreChecks(Transaction transaction, UUID uuid) {
 		TownyPreTransactionEvent preEvent = new TownyPreTransactionEvent(transaction);
 		BukkitTools.getPluginManager().callEvent(preEvent);
 
 		if (preEvent.isCancelled()) {
-			TownyMessaging.sendErrorMsg(transaction.getPlayer(), preEvent.getCancelMessage());
+			TownyMessaging.sendErrorMsg(transaction.getUUID(), preEvent.getCancelMessage());
 			return false;
 		}
 
-		checkNewAccount(accountName);
+		checkNewAccount(uuid);
 		return true;
 	}
+
+	public static boolean subtract(UUID uuid, double amount, World world) {
+		Transaction transaction = new Transaction(TransactionType.SUBTRACT, uuid, amount);
+		TownyTransactionEvent event = new TownyTransactionEvent(transaction);
+		
+		if (!runPreChecks(transaction, uuid)) {
+			return false;
+		}
+		
+		if (economy.subtract(uuid, amount, world)) {
+			BukkitTools.getPluginManager().callEvent(event);
+			return true;
+		}
+		
+		return false;
+	}
+
+	/**
+	 * Add funds to an account.
+	 * 
+	 * @param uuid UUID to add funds to
+	 * @param amount amount of currency to add
+	 * @param world name of world (for TNE Reserve)
+	 * @return true if successful
+	 */
+	public static boolean add(UUID uuid, double amount, World world) {
+
+		Transaction transaction = new Transaction(TransactionType.ADD, uuid, amount);
+		TownyTransactionEvent event = new TownyTransactionEvent(transaction);
+
+		if (!runPreChecks(transaction, uuid)) {
+			return false;
+		}
+
+		if (economy.add(uuid, amount, world)) {
+			BukkitTools.getPluginManager().callEvent(event);
+			return true;
+		}
+
+		return false;
+	}
 	
+	public static boolean subtract(Government gov, double amount, World world) {
+		Transaction transaction = new Transaction(TransactionType.SUBTRACT, gov.getUUID(), amount);
+		TownyTransactionEvent event = new TownyTransactionEvent(transaction);
+		
+		if (!runPreChecks(transaction, gov.getUUID())) {
+			return false;
+		}
+		
+		if (economy.subtract(gov, amount, world)) {
+			BukkitTools.getPluginManager().callEvent(event);
+			return true;
+		}
+		
+		return false;
+	}
+
+	/**
+	 * Add funds to an account.
+	 * 
+	 * @param gov Government to add funds to
+	 * @param amount amount of currency to add
+	 * @param world name of world (for TNE Reserve)
+	 * @return true if successful
+	 */
+	public static boolean add(Government gov, double amount, World world) {
+
+		Transaction transaction = new Transaction(TransactionType.ADD, gov.getUUID(), amount);
+		TownyTransactionEvent event = new TownyTransactionEvent(transaction);
+
+		if (!runPreChecks(transaction, gov.getUUID())) {
+			return false;
+		}
+
+		if (economy.add(gov, amount, world)) {
+			BukkitTools.getPluginManager().callEvent(event);
+			return true;
+		}
+
+		return false;
+	}
 
 	/**
 	 * Attempts to remove an amount from an account
@@ -232,18 +315,10 @@ public class TownyEconomyHandler {
 	 * @param world name of the world in which to check in (TNE Reserve)   
 	 * @return true if successful
 	 */
+	@Deprecated
 	public static boolean subtract(String accountName, double amount, World world) {
 
-		Player player = Bukkit.getServer().getPlayer(accountName);
-		Transaction transaction = new Transaction(TransactionType.SUBTRACT, player, amount);
-		TownyTransactionEvent event = new TownyTransactionEvent(transaction);
-		
-		if (!runPreChecks(transaction, accountName)) {
-			return false;
-		}
-		
 		if (economy.subtract(accountName, amount, world)) {
-			BukkitTools.getPluginManager().callEvent(event);
 			return true;
 		}
 		
@@ -258,29 +333,32 @@ public class TownyEconomyHandler {
 	 * @param world name of world (for TNE Reserve)
 	 * @return true if successful
 	 */
+	@Deprecated
 	public static boolean add(String accountName, double amount, World world) {
 
-		Player player = Bukkit.getServer().getPlayer(accountName);
-		Transaction transaction = new Transaction(TransactionType.ADD, player, amount);
-		TownyTransactionEvent event = new TownyTransactionEvent(transaction);
-
-		if (!runPreChecks(transaction, accountName)) {
-			return false;
-		}
-
 		if (economy.add(accountName, amount, world)) {
-			BukkitTools.getPluginManager().callEvent(event);
 			return true;
 		}
 
 		return false;
 	}
 
+	@Deprecated
 	public static boolean setBalance(String accountName, double amount, World world) {
 		checkNewAccount(accountName);
 		return economy.setBalance(accountName, amount, world);
 	}
 
+	public static boolean setBalance(UUID uuid, double amount, World world) {
+		checkNewAccount(uuid);
+		return economy.setBalance(uuid, amount, world);
+	}
+
+	public static boolean setBalance(Government gov, double amount, World world) {
+		checkNewAccount(gov);
+		return economy.setBalance(gov, amount, world);
+	}
+	
 	/**
 	 * Format this balance according to the current economy systems settings.
 	 * 
@@ -306,7 +384,7 @@ public class TownyEconomyHandler {
 	 * @return A boolean indicating success.
 	 */
 	public static boolean addToServer(double amount, World world) {
-		return add(getServerAccount(), amount, world);
+		return add(getUUIDServerAccount(), amount, world);
 	}
 
 	/**
@@ -317,9 +395,9 @@ public class TownyEconomyHandler {
 	 * @return A boolean indicating success.
 	 */
 	public static boolean subtractFromServer(double amount, World world) {
-		return subtract(getServerAccount(), amount, world);
+		return subtract(getUUIDServerAccount(), amount, world);
 	}
-	
+	@Deprecated
 	private static void checkNewAccount(String accountName) {
 		// Check if the account exists, if not create one.
 		if (!economy.hasAccount(accountName)) {
@@ -327,10 +405,41 @@ public class TownyEconomyHandler {
 		}
 	}
 	
+	private static void checkNewAccount(UUID uuid) {
+		// Check if the account exists, if not create one.
+		if (!economy.hasAccount(uuid)) {
+			economy.newAccount(uuid);
+		}
+	}
+	
+	private static void checkNewAccount(Government gov) {
+		// Check if the account exists, if not create one.
+		if (!economy.hasAccount(gov)) {
+			economy.newAccount(gov);
+		}
+	}
+
+	public static void newAccount(Government gov) {
+		economy.newAccount(gov);
+	}
+	
+	public static boolean hasAccount(Government gov) {
+		return economy.hasAccount(gov);
+	}
+	
+	public static void newAccount(UUID uuid) {
+		economy.newAccount(uuid);
+	}
+	
+	public static boolean hasAccount(UUID uuid) {
+		return economy.hasAccount(uuid);
+	}
+
+	@Deprecated
 	public static void newAccount(String accountName) {
 		economy.newAccount(accountName);
 	}
-	
+	@Deprecated
 	public static boolean hasAccount(String accountName) {
 		return economy.hasAccount(accountName);
 	}

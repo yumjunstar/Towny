@@ -1,5 +1,8 @@
 package com.palmergames.bukkit.towny.object.economy;
 
+import java.util.UUID;
+
+import com.google.common.base.Charsets;
 import com.palmergames.bukkit.config.ConfigNodes;
 import com.palmergames.bukkit.towny.TownyEconomyHandler;
 import com.palmergames.bukkit.towny.TownySettings;
@@ -9,16 +12,21 @@ import com.palmergames.bukkit.towny.TownySettings;
  */
 public class TownyServerAccount extends Account {
 	public TownyServerAccount() {
-		super(TownySettings.getString(ConfigNodes.ECO_CLOSED_ECONOMY_SERVER_ACCOUNT));
+		super(UUID.nameUUIDFromBytes((TownySettings.getString(ConfigNodes.ECO_CLOSED_ECONOMY_SERVER_ACCOUNT).getBytes(Charsets.UTF_8))));
 	}
 
 	@Override
 	protected boolean addMoney(double amount) {
-		return TownyEconomyHandler.add(getName(), amount, world);
+		return TownyEconomyHandler.add(getUUID(), amount, world);
 	}
 
 	@Override
 	protected boolean subtractMoney(double amount) {
-		return TownyEconomyHandler.subtract(getName(), amount, world);
+		return TownyEconomyHandler.subtract(getUUID(), amount, world);
+	}
+
+	@Override
+	public String getName() {
+		return TownySettings.getString(ConfigNodes.ECO_CLOSED_ECONOMY_SERVER_ACCOUNT);
 	}
 }
