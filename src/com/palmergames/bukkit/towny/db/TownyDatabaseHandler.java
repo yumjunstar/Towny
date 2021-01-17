@@ -958,14 +958,6 @@ public abstract class TownyDatabaseHandler extends TownyDataSource {
 			}
 			town.setUUID(oldUUID);
 			town.setRegistered(oldregistration);
-//			if (TownyEconomyHandler.isActive()) {
-//				try {
-//					town.getAccount().setName(TownySettings.getTownAccountPrefix() + town.getName());
-//					town.getAccount().setBalance(townBalance, "Rename Town - Transfer to new account");
-//				} catch (EconomyException e) {
-//					e.printStackTrace();
-//				}
-//			}
 
 			for (Resident resident : toSave) {
 				saveResident(resident);
@@ -1061,14 +1053,6 @@ public abstract class TownyDatabaseHandler extends TownyDataSource {
 			nation.setName(filteredName);
 			universe.registerNation(nation);
 
-//			if (TownyEconomyHandler.isActive()) {
-//				try {
-//					nation.getAccount().setName(TownySettings.getNationAccountPrefix() + nation.getName());
-//					nation.getAccount().setBalance(nationBalance, "Rename Nation - Transfer to new account");
-//				} catch (EconomyException e) {
-//					e.printStackTrace();
-//				}
-//			}
 
 			for (Town town : toSave) {
 				saveTown(town);

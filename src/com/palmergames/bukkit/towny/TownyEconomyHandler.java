@@ -40,14 +40,6 @@ public class TownyEconomyHandler {
 	public enum EcoType {
 		NONE, VAULT, RESERVE
 	}
-	
-	public static UUID getUUIDServerAccount() {
-		return UUID.nameUUIDFromBytes(TownySettings.getString(ConfigNodes.ECO_CLOSED_ECONOMY_SERVER_ACCOUNT).getBytes(Charsets.UTF_8));
-	}
-	
-	public static UUID getUUIDWarChestAccount() {
-		return UUID.nameUUIDFromBytes(("towny-war-chest").getBytes(Charsets.UTF_8));
-	}	
 
 	public static void initialize(Towny plugin) {
 		TownyEconomyHandler.plugin = plugin;
@@ -130,6 +122,22 @@ public class TownyEconomyHandler {
 		 */
 		return false;
 	}
+	
+	public static void setServerAccountBalance(double balance, World world) {
+		economy.setBalance(TownyServerAccount.getOfflinePlayer(), balance, world);
+	}
+	
+	public static void setWarSpoilsAccountBalance(double balance, World world) {
+		economy.setBalance(WarSpoilsAccount.getOfflinePlayer(), balance, world);
+	}
+
+	public static UUID getUUIDServerAccount() {
+		return UUID.nameUUIDFromBytes(TownySettings.getString(ConfigNodes.ECO_CLOSED_ECONOMY_SERVER_ACCOUNT).getBytes(Charsets.UTF_8));
+	}
+	
+	public static UUID getUUIDWarChestAccount() {
+		return UUID.nameUUIDFromBytes(("towny-war-chest").getBytes(Charsets.UTF_8));
+	}	
 
 	/**
 	 * Format this balance according to the current economy systems settings.
@@ -572,15 +580,5 @@ public class TownyEconomyHandler {
 	public static void removeAccount(String accountName) {
 		economy.deleteAccount(accountName);
 	}
-
-
-	public static void setServerAccountBalance(double balance, World world) {
-		economy.setBalance(TownyServerAccount.getOfflinePlayer(), balance, world);
-	}
-	
-	public static void setWarSpoilsAccountBalance(double balance, World world) {
-		economy.setBalance(WarSpoilsAccount.getOfflinePlayer(), balance, world);
-	}
-
 
 }

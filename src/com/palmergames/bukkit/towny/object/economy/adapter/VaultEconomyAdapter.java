@@ -199,6 +199,4 @@ public class VaultEconomyAdapter implements EconomyAdapter {
 		return true;
 	}
 
-
-
 }
