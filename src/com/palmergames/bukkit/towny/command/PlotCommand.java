@@ -1452,7 +1452,7 @@ public class PlotCommand extends BaseCommand implements CommandExecutor {
 
 			if (split.length == 2) {
 				// Create a brand new plot group.
-				UUID plotGroupID = TownyUniverse.getInstance().generatePlotGroupID();
+				UUID plotGroupID = UUID.randomUUID();
 				String plotGroupName = split[1];
 
 				newGroup = new PlotGroup(plotGroupID, plotGroupName, town);

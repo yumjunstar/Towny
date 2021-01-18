@@ -21,6 +21,7 @@ import com.palmergames.bukkit.towny.object.TownBlock;
 import com.palmergames.bukkit.towny.object.TownyWorld;
 import com.palmergames.bukkit.towny.object.Translation;
 import com.palmergames.bukkit.towny.object.WorldCoord;
+import com.palmergames.bukkit.towny.object.jail.Jail;
 import com.palmergames.bukkit.towny.object.metadata.CustomDataField;
 import com.palmergames.bukkit.towny.object.metadata.MetadataLoader;
 import com.palmergames.bukkit.towny.permissions.TownyPermissionSource;
@@ -82,6 +83,8 @@ public class TownyUniverse {
     
 	private final Map<Location, SpawnPoint> spawnPoints = new ConcurrentHashMap<>(); 
     private final List<Resident> jailedResidents = new ArrayList<>();
+    private final Map<UUID, Jail> jailUUIDMap = new ConcurrentHashMap<>();
+    
     private final String rootFolder;
     private TownyDataSource dataSource;
     private TownyPermissionSource permissionSource;
@@ -198,6 +201,7 @@ public class TownyUniverse {
         residentUUIDMap.clear();
         townBlocks.clear();
         spawnPoints.clear();
+        jailUUIDMap.clear();
     }
     
     /**
@@ -921,10 +925,6 @@ public class TownyUniverse {
 		return newGroup;
 	}
 
-	public UUID generatePlotGroupID() {
-		return UUID.randomUUID();
-	}
-
 	public void removeGroup(PlotGroup group) {
 		group.getTown().removePlotGroup(group);
 		
@@ -1168,6 +1168,50 @@ public class TownyUniverse {
 			spawnPoints.remove(loc);
 	}
 	
+    /*
+     * Jail Stuff
+     */
+
+    public Map<UUID, Jail> getJailUUIDMap() {
+    	return jailUUIDMap;
+    }
+    
+    @Nullable
+    public Jail getJail(UUID uuid) {
+    	if (hasJail(uuid))
+    		return jailUUIDMap.get(uuid);
+    	
+    	return null;
+    }
+    
+    public boolean hasJail(UUID uuid) {
+    	return jailUUIDMap.containsKey(uuid);
+    }
+    
+    public void registerJail(Jail jail) {
+    	jailUUIDMap.put(jail.getUUID(), jail);
+    }
+    
+    public void unregisterJail(Jail jail) {
+    	jailUUIDMap.remove(jail.getUUID());
+    }
+    
+    /**
+     * Used in loading only.
+     * 
+     * @param uuid UUID of the given jail, taken from the Jail filename.
+     */
+    public void newJailInternal(String uuid) {
+    	// Remaining fields are set later on in the loading process.
+    	Jail jail = new Jail(UUID.fromString(uuid), null, null, null);
+    	registerJail(jail);
+    }
+    
+    
+    /*
+     * Deprecated Stuff
+     */
+    
 	/**
 	 * Retrieves the configuration's output database type.
 	 * 

@@ -881,7 +881,6 @@ public class TownyAdminCommand extends BaseCommand implements CommandExecutor {
 				if(resident.isJailed())	{
 					resident.setJailed(false);
 					final String jailTownName = resident.getJailTown();
-					final int index = resident.getJailSpawn();
 					
 					final Town jailTown = townyUniverse.getTown(jailTownName);
 					
@@ -894,11 +893,8 @@ public class TownyAdminCommand extends BaseCommand implements CommandExecutor {
 					// Use teleport warmup
 					jailedPlayer.sendMessage(Translation.of("msg_town_spawn_warmup", TownySettings.getTeleportWarmupTime()));
 					TownyAPI.getInstance().jailTeleport(jailedPlayer, loc);
-
-					resident.removeJailSpawn();
-					resident.setJailTown("");
 					TownyMessaging.sendMsg(player, "You have been freed from jail.");
-					TownyMessaging.sendPrefixedTownMessage(jailTown, jailedPlayer.getName() + " has been freed from jail number " + index);
+					TownyMessaging.sendPrefixedTownMessage(jailTown, jailedPlayer.getName() + " has been freed from jail number " + resident.getJailCell());
 				} else {
 					throw new TownyException(Translation.of("msg_player_not_jailed_in_your_town"));
 				}

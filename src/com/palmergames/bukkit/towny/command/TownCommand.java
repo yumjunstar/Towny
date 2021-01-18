@@ -55,6 +55,9 @@ import com.palmergames.bukkit.towny.object.TownyWorld;
 import com.palmergames.bukkit.towny.object.Translation;
 import com.palmergames.bukkit.towny.object.WorldCoord;
 import com.palmergames.bukkit.towny.object.inviteobjects.PlayerJoinTownInvite;
+import com.palmergames.bukkit.towny.object.jail.Jail;
+import com.palmergames.bukkit.towny.object.jail.JailReason;
+import com.palmergames.bukkit.towny.object.jail.UnJailReason;
 import com.palmergames.bukkit.towny.permissions.PermissionNodes;
 import com.palmergames.bukkit.towny.permissions.TownyPermissionSource;
 import com.palmergames.bukkit.towny.permissions.TownyPerms;
@@ -65,6 +68,7 @@ import com.palmergames.bukkit.towny.tasks.CooldownTimerTask.CooldownType;
 import com.palmergames.bukkit.towny.tasks.TownClaim;
 import com.palmergames.bukkit.towny.utils.AreaSelectionUtil;
 import com.palmergames.bukkit.towny.utils.CombatUtil;
+import com.palmergames.bukkit.towny.utils.JailUtil;
 import com.palmergames.bukkit.towny.utils.MoneyUtil;
 import com.palmergames.bukkit.towny.utils.NameUtil;
 import com.palmergames.bukkit.towny.utils.OutpostUtil;
@@ -133,7 +137,9 @@ public class TownCommand extends BaseCommand implements CommandExecutor, TabComp
 		"invite",
 		"buy",
 		"mayor",
-		"bankhistory"
+		"bankhistory",
+		"jail",
+		"unjail"
 		);
 	private static final List<String> townSetTabCompletes = Arrays.asList(
 		"board",
@@ -726,6 +732,20 @@ public class TownCommand extends BaseCommand implements CommandExecutor, TabComp
 
 					TownyUniverse.getInstance().getResident(player.getUniqueId()).getTown().generateBankHistoryBook(player, pages);
 
+				} else if (split[0].equalsIgnoreCase("jail")) {
+					
+					if (!permSource.testPermission(player, PermissionNodes.TOWNY_COMMAND_TOWN_JAIL.getNode()))
+						throw new TownyException(Translation.of("msg_err_command_disable"));
+
+					parseJailCommand(player, null, StringMgmt.remFirstArg(split), false);
+
+				} else if (split[0].equalsIgnoreCase("unjail")) {
+
+					if (!permSource.testPermission(player, PermissionNodes.TOWNY_COMMAND_TOWN_UNJAIL.getNode()))
+						throw new TownyException(Translation.of("msg_err_command_disable"));
+					
+					parseUnJailCommand(player, null, StringMgmt.remFirstArg(split), false);
+					
 				} else {
 					/*
 					 * We've gotten this far without a match, check if the argument is a town name.
@@ -1290,7 +1310,6 @@ public class TownCommand extends BaseCommand implements CommandExecutor, TabComp
 	}
 
 	public static void townToggle(CommandSender sender, String[] split, boolean admin, Town town) throws TownyException {
-		TownyUniverse townyUniverse = TownyUniverse.getInstance();
 		TownyPermissionSource permSource = TownyUniverse.getInstance().getPermissionSource();
 
 		if (split.length == 0 || split[0].equalsIgnoreCase("?") || split[0].equalsIgnoreCase("help")) {
@@ -1312,7 +1331,7 @@ public class TownCommand extends BaseCommand implements CommandExecutor, TabComp
 				throw new TownyException(Translation.of("msg_err_command_disable"));
 			
 			Optional<Boolean> choice = Optional.empty();
-			if (split.length == 2 && !split[0].equalsIgnoreCase("jail")) { // Exclude jail command from on/off
+			if (split.length == 2) {
 				choice = BaseCommand.parseToggleChoice(split[1]);
 			}
 
@@ -1491,84 +1510,6 @@ public class TownCommand extends BaseCommand implements CommandExecutor, TabComp
 				if (admin)
 					TownyMessaging.sendMsg(sender, Translation.of("msg_changed_peaceful", town.isNeutral() ? Translation.of("enabled") : Translation.of("disabled")));
 				
-			} else if (split[0].equalsIgnoreCase("jail")) {
-				if (!town.hasJailSpawn())
-					throw new TownyException(Translation.of("msg_town_has_no_jails"));
-
-				Integer index, days;
-				if (split.length <= 2) {
-					sender.sendMessage(ChatTools.formatTitle("/town toggle jail"));
-					sender.sendMessage(ChatTools.formatCommand("", "/town toggle jail", "[number] [resident]", ""));
-					sender.sendMessage(ChatTools.formatCommand("", "/town toggle jail", "[number] [resident] [days]", ""));
-
-				} else if (split.length > 2) {
-					try {
-						Integer.parseInt(split[1]);
-						index = Integer.valueOf(split[1]);
-						if (split.length == 4) {
-							days = Integer.valueOf(split[3]);
-							if (days < 1)
-								throw new TownyException(Translation.of("msg_err_days_must_be_greater_than_zero"));
-						} else
-							days = 0;
-						if (!admin && !((Player) sender).hasPermission("towny.command.town.toggle.jail")) 
-							throw new TownyException(Translation.of("msg_no_permission_to_jail_your_residents"));
-
-						Resident jailedresident = townyUniverse.getResident(split[2]);
-						if (jailedresident == null || (!jailedresident.hasTown() && !jailedresident.isJailed()))
-							throw new TownyException(Translation.of("msg_resident_not_part_of_any_town"));
-
-						try {
-
-							if (jailedresident.isJailed() && index != jailedresident.getJailSpawn())
-								index = jailedresident.getJailSpawn();
-
-							Player jailedPlayer = TownyAPI.getInstance().getPlayer(jailedresident);
-							if (jailedPlayer == null) {
-								throw new TownyException(Translation.of("msg_player_is_not_online", jailedresident.getName()));
-							}
-							Town sendertown = resident.getTown();
-							if (!admin && jailedPlayer.getUniqueId().equals(((Player) sender).getUniqueId()))
-								throw new TownyException(Translation.of("msg_no_self_jailing"));
-
-							if (jailedresident.isJailed()) {
-								Town jailTown = townyUniverse.getTown(jailedresident.getJailTown());
-								
-								if (jailTown == null)
-									throw new TownyException(Translation.of("msg_err_not_registered_1", jailedresident.getJailTown()));
-								else if (jailTown != sendertown) {
-									throw new TownyException(Translation.of("msg_player_not_jailed_in_your_town"));
-								} else {
-									jailedresident.setJailedByMayor(index, sendertown, days);
-									if (admin)
-										TownyMessaging.sendMsg(sender, Translation.of("msg_player_has_been_sent_to_jail_number", jailedPlayer.getName(), index));
-									return;
-
-								}
-							}
-
-							if (jailedresident.getTown() != sendertown)
-								throw new TownyException(Translation.of("msg_resident_not_your_town"));
-
-							jailedresident.setJailedByMayor(index, sendertown, days);
-							if (admin)
-								TownyMessaging.sendMsg(sender, Translation.of("msg_player_has_been_sent_to_jail_number", jailedPlayer.getName(), index));
-
-						} catch (NotRegisteredException x) {
-							throw new TownyException(Translation.of("msg_err_not_registered_1", split[0]));
-						}
-
-					} catch (NumberFormatException e) {
-						sender.sendMessage(ChatTools.formatTitle("/town toggle jail"));
-						sender.sendMessage(ChatTools.formatCommand("", "/town toggle jail", "[number] [resident]", ""));
-						sender.sendMessage(ChatTools.formatCommand("", "/town toggle jail", "[number] [resident] [days]", ""));
-						return;
-					} catch (NullPointerException e) {
-						e.printStackTrace();
-						return;
-					}
-				}
-
 			} else {
             	/*
             	 * Fire of an event if we don't recognize the command being used.
@@ -1597,6 +1538,103 @@ public class TownCommand extends BaseCommand implements CommandExecutor, TabComp
 			// Save the Town.
 			town.save();
 		}
+	}
+	
+	private static void parseUnJailCommand(CommandSender sender, Town town, String[] split, boolean admin) throws TownyException {
+		
+		if (!admin) {
+			Resident resident = TownyUniverse.getInstance().getResident(((Player) sender).getUniqueId());
+			if (resident.hasTown())
+				town = resident.getTown();
+			else
+				throw new TownyException("You have no town");
+		}
+		
+		if (split.length != 1)
+			HelpMenu.TOWN_UNJAIL.send(sender);
+
+		Resident jailedResident = TownyUniverse.getInstance().getResident(split[0]);
+		if (jailedResident == null || !jailedResident.isJailed() || (jailedResident.isJailed() && !jailedResident.getJail().getTown().equals(town)))
+			throw new TownyException(Translation.of("msg_player_not_jailed_in_your_town"));
+		
+		JailUtil.unJailResident(jailedResident, UnJailReason.PARDONED);
+		if (admin)
+			TownyMessaging.sendMsg(sender, "Resident has been unjailed");
+	}
+
+	private static void parseJailCommand(CommandSender sender, Town town, String[] split, boolean admin) throws TownyException {
+		
+		if (!admin) {
+			Resident resident = TownyUniverse.getInstance().getResident(((Player) sender).getUniqueId());
+			if (resident.hasTown())
+				town = resident.getTown();
+			else
+				throw new TownyException("You have no town");
+		}
+			
+		if (!town.hasJails())
+			throw new TownyException(Translation.of("msg_town_has_no_jails"));
+
+		int hours;
+		int jailNum = 1;		
+		int cell = 0;
+		Jail jail = null;
+		if (split.length <= 1) {
+			HelpMenu.TOWN_JAIL.send(sender);
+
+		} else if (split.length >= 2) {
+			try {
+				Resident jailedResident = TownyUniverse.getInstance().getResident(split[0]);
+				if (jailedResident == null || !town.hasResident(jailedResident))
+					throw new TownyException(Translation.of("msg_resident_not_your_town"));
+
+				if (jailedResident.isJailed())
+					throw new TownyException(jailedResident.getName() + " is already jailed");
+				
+				Player jailedPlayer = jailedResident.getPlayer();
+				if (jailedPlayer == null)
+					throw new TownyException(Translation.of("msg_player_is_not_online", jailedResident.getName()));
+
+				if (!admin && jailedPlayer.getUniqueId().equals(((Player) sender).getUniqueId()))
+					throw new TownyException(Translation.of("msg_no_self_jailing"));
+
+
+				try {
+					Integer.parseInt(split[1]);
+					if (split.length > 2)
+						Integer.parseInt(split[2]);
+					if (split.length > 3)
+						Integer.parseInt(split[3]);
+				} catch (NumberFormatException e) {
+					HelpMenu.TOWN_JAIL.send(sender);
+					return;
+				}
+				hours = Integer.valueOf(split[1]);
+				if (hours < 1)
+					hours = 1;
+
+				if (split.length >= 3) {
+					jailNum = Integer.valueOf(split[2]);
+					jail = town.getJail(jailNum);
+					if (jail == null) 
+						throw new TownyException("The town does not have that many jails.");
+				}
+				if (split.length == 4) {
+					cell = Integer.valueOf(split[3]);
+					if (!jail.hasJailCell(cell))
+						throw new TownyException("The jail does not have that many jail cells.");
+				}
+
+				JailUtil.jailResident(jailedResident, jail, cell, hours, JailReason.MAYOR, sender);
+				if (admin)
+					TownyMessaging.sendMsg(sender, Translation.of("msg_player_has_been_sent_to_jail_number", jailedPlayer.getName(), jailNum));
+
+			} catch (NullPointerException e) {
+				e.printStackTrace();
+				return;
+			}
+		}
+		
 	}
 
 	private static void toggleTest(Player player, Town town, String split) throws TownyException {
@@ -2159,16 +2197,17 @@ public class TownCommand extends BaseCommand implements CommandExecutor, TabComp
 						return;
 					}
 
-				} else if (split[0].equalsIgnoreCase("jail")) {
-
-					try {
-						town.addJailSpawn(player.getLocation());
-						TownyMessaging.sendMsg(player, Translation.of("msg_set_jail_spawn"));
-					} catch (TownyException e) {
-						TownyMessaging.sendErrorMsg(player, e.getMessage());
-						return;
-					}
-
+// TODO: A method of setting, re-setting and removing jail spawns.
+//				} else if (split[0].equalsIgnoreCase("jail")) {
+//
+//					try {
+//						town.addJailSpawn(player.getLocation());
+//						TownyMessaging.sendMsg(player, Translation.of("msg_set_jail_spawn"));
+//					} catch (TownyException e) {
+//						TownyMessaging.sendErrorMsg(player, e.getMessage());
+//						return;
+//					}
+//
 				} else if (split[0].equalsIgnoreCase("perm")) {
 
 					// Make sure we are allowed to set these permissions.
@@ -2598,12 +2637,8 @@ public class TownCommand extends BaseCommand implements CommandExecutor, TabComp
 				throw new TownyException(event.getCancelMessage());
 
 			Confirmation.runOnAccept(() -> {
-				if (resident.isJailed() && resident.getJailTown().equals(town.getName())) {
-					resident.setJailed(false);
-					resident.setJailSpawn(0);
-					resident.setJailTown("");
-					TownyMessaging.sendPrefixedTownMessage(town, Translation.of("msg_player_escaped_jail_by_leaving_town", resident.getName()));
-				}
+				if (resident.isJailed() && resident.getJailTown().equals(town.getName()))
+					JailUtil.unJailResident(resident, UnJailReason.LEFT_TOWN);
 
 				try {
 					townRemoveResident(town, resident);

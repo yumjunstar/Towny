@@ -110,6 +110,9 @@ public enum PermissionNodes {
 		TOWNY_COMMAND_TOWN_WITHDRAW("towny.command.town.withdraw"),
 		TOWNY_COMMAND_TOWN_DEPOSIT("towny.command.town.deposit"),
 		TOWNY_COMMAND_TOWN_PLOTS("towny.command.town.plots"),
+		TOWNY_COMMAND_TOWN_BUY("towny.command.town.buy"),
+		TOWNY_COMMAND_TOWN_JAIL("towny.command.town.jail"),
+		TOWNY_COMMAND_TOWN_UNJAIL("towny.command.town.unjail"),
 		
 		// Covers all assignable ranks
 		TOWNY_COMMAND_TOWN_RANK("towny.command.town.rank.*"),
@@ -135,9 +138,6 @@ public enum PermissionNodes {
 			TOWNY_COMMAND_TOWN_SET_SURNAME("towny.command.town.set.surname"),
 			TOWNY_COMMAND_TOWN_SET_TAXPERCENTCAP("towny.command.town.set.taxpercentcap"),
 		
-		TOWNY_COMMAND_TOWN_BUY("towny.command.town.buy"),
-		TOWNY_COMMAND_TOWN_JAIL("towny.command.town.jail"),
-		
 		TOWNY_COMMAND_TOWN_TOGGLE("towny.command.town.toggle.*"),
 			TOWNY_COMMAND_TOWN_TOGGLE_PVP("towny.command.town.toggle.pvp"),
 			TOWNY_COMMAND_TOWN_TOGGLE_PUBLIC("towny.command.town.toggle.public"),
@@ -146,7 +146,6 @@ public enum PermissionNodes {
 			TOWNY_COMMAND_TOWN_TOGGLE_MOBS("towny.command.town.toggle.mobs"),
 			TOWNY_COMMAND_TOWN_TOGGLE_TAXPERCENT("towny.command.town.toggle.taxpercent"),
 			TOWNY_COMMAND_TOWN_TOGGLE_OPEN("towny.command.town.toggle.open"),
-			TOWNY_COMMAND_TOWN_TOGGLE_JAIL("towny.command.town.toggle.jail"),
 			TOWNY_COMMAND_TOWN_TOGGLE_NEUTRAL("towny.command.town.toggle.neutral"),
 		
 		
