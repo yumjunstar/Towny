@@ -105,7 +105,7 @@ public class HUDManager implements Listener{
 	{
 		boolean home = event.getTownBlock().isHomeBlock();
 		for (Player p : event.getPlayers()){
-			if (warUsers.contains(p))
+			if (warUsers.contains(p) && isWarHUDActive(p))
 				WarHUD.updateHealth(p, event.getHP(), home);
 		}
 	}
@@ -116,13 +116,15 @@ public class HUDManager implements Listener{
 		War warEvent = TownyUniverse.getInstance().getWarEvent();
 		for (Resident r : event.getTown().getResidents()) {
 			Player player = BukkitTools.getPlayer(r.getName());
-			if (player != null && warUsers.contains(player))
+			if (player != null && warUsers.contains(player) && isWarHUDActive(player))
 				WarHUD.updateScore(player, event.getScore());
 		}
 		//Update top scores for all HUD users
 		String[] top = warEvent.getTopThree();
-		for (Player p : warUsers)
-			WarHUD.updateTopScores(p, top);
+		for (Player p : warUsers) {
+			if (isWarHUDActive(p))
+				WarHUD.updateTopScores(p, top);
+		}
 	}
 
 	//Perm Specific
@@ -130,18 +132,20 @@ public class HUDManager implements Listener{
 	public void onTownBlockSettingsChanged (TownBlockSettingsChangedEvent e) {
 
 		if (e.getTownyWorld() != null)
-			for (Player p : permUsers)
-				PermHUD.updatePerms(p);
+			for (Player p : permUsers) {
+				if (isPermHUDActive(p)) 
+					PermHUD.updatePerms(p);
+			}
 		else if (e.getTown() != null)
 			for (Player p : permUsers)
 				try {
-					if (new WorldCoord(p.getWorld().getName(), Coord.parseCoord(p)).getTownBlock().getTown() == e.getTown())
+					if (isPermHUDActive(p) && new WorldCoord(p.getWorld().getName(), Coord.parseCoord(p)).getTownBlock().getTown() == e.getTown())
 						PermHUD.updatePerms(p);
 				} catch (Exception ex) {}
 		else if (e.getTownBlock() != null)
 			for (Player p : permUsers)
 				try {
-					if (new WorldCoord(p.getWorld().getName(), Coord.parseCoord(p)).getTownBlock() == e.getTownBlock())
+					if (isPermHUDActive(p) && new WorldCoord(p.getWorld().getName(), Coord.parseCoord(p)).getTownBlock() == e.getTownBlock())
 						PermHUD.updatePerms(p);
 				} catch (Exception ex) {}
 	}
@@ -165,14 +169,16 @@ public class HUDManager implements Listener{
 	public static void removePermHUDUser(Player player) {
 		if (permUsers.contains(player)) {
 			permUsers.remove(player);
-			toggleOff(player);
+			if (isPermHUDActive(player))
+				toggleOff(player);
 		}
 	}
 
 	public static void removeWarHUDUser(Player player) {
 		if (warUsers.contains(player)) {
 			warUsers.remove(player);
-			toggleOff(player);
+			if (isWarHUDActive(player))
+				toggleOff(player);
 		}
 	}
 
