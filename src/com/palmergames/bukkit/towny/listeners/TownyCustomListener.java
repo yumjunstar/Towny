@@ -3,6 +3,7 @@ package com.palmergames.bukkit.towny.listeners;
 import com.palmergames.bukkit.config.ConfigNodes;
 import com.palmergames.bukkit.towny.ChunkNotification;
 import com.palmergames.bukkit.towny.Towny;
+import com.palmergames.bukkit.towny.TownyAPI;
 import com.palmergames.bukkit.towny.TownyEconomyHandler;
 import com.palmergames.bukkit.towny.TownyMessaging;
 import com.palmergames.bukkit.towny.TownySettings;
@@ -14,7 +15,6 @@ import com.palmergames.bukkit.towny.event.BedExplodeEvent;
 import com.palmergames.bukkit.towny.event.NewTownEvent;
 import com.palmergames.bukkit.towny.event.PlayerChangePlotEvent;
 import com.palmergames.bukkit.towny.event.nation.NationPreTownLeaveEvent;
-import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.CellBorder;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.Town;
@@ -57,6 +57,7 @@ public class TownyCustomListener implements Listener {
 		Player player = event.getPlayer();
 		WorldCoord from = event.getFrom();
 		WorldCoord to = event.getTo();
+		TownyWorld world = TownyAPI.getInstance().getTownyWorld(event.getTo().getWorldName());
 
 		if (plugin.hasPlayerMode(player, "townclaim"))
 			TownCommand.parseTownClaimCommand(player, new String[] {});
@@ -66,56 +67,52 @@ public class TownyCustomListener implements Listener {
 			TownyCommand.showMap(player);
 
 		// Check if player has entered a new town/wilderness
-		try {
-			if (to.getTownyWorld().isUsingTowny() && TownySettings.getShowTownNotifications()) {
-				Resident resident = TownyUniverse.getInstance().getResident(player.getUniqueId());
-				String msg = null;
-				try {
-					if (resident != null) {
-						ChunkNotification chunkNotifier = new ChunkNotification(from, to);
-						msg = chunkNotifier.getNotificationString(resident);
-					}
-				} catch (NullPointerException e) {
-					System.out.println("Towny ChunkNotifier generated an NPE, this is harmless but if you'd like to report it the following information will be useful:");
-					System.out.println("  Player: " + player.getName() + "  To: " + to.getWorldName() + "," + to.getX() + "," + to.getZ() + "  From: " + from.getWorldName() + "," + from.getX() + "," + from.getZ());
-					e.printStackTrace();
+		if (world.isUsingTowny() && TownySettings.getShowTownNotifications()) {
+			Resident resident = TownyUniverse.getInstance().getResident(player.getUniqueId());
+			String msg = null;
+			try {
+				if (resident != null) {
+					ChunkNotification chunkNotifier = new ChunkNotification(from, to);
+					msg = chunkNotifier.getNotificationString(resident);
 				}
-				if (msg != null) {
-					msg = Colors.translateColorCodes(msg);
-					
-					if (Towny.isSpigot && TownySettings.isNotificationsAppearingInActionBar()) {
-						int seconds = TownySettings.getInt(ConfigNodes.NOTIFICATION_ACTIONBAR_DURATION);
-						if (seconds > 3) {
-							// Vanilla action bar displays for 3 seconds, so we shouldn't bother with any scheduling.
-							// Cancel any older tasks running to prevent them from leaking over.
-							if (playerActionTasks.get(player) != null) {
+			} catch (NullPointerException e) {
+				System.out.println("Towny ChunkNotifier generated an NPE, this is harmless but if you'd like to report it the following information will be useful:");
+				System.out.println("  Player: " + player.getName() + "  To: " + to.getWorldName() + "," + to.getX() + "," + to.getZ() + "  From: " + from.getWorldName() + "," + from.getX() + "," + from.getZ());
+				e.printStackTrace();
+			}
+			if (msg != null) {
+				msg = Colors.translateColorCodes(msg);
+				
+				if (Towny.isSpigot && TownySettings.isNotificationsAppearingInActionBar()) {
+					int seconds = TownySettings.getInt(ConfigNodes.NOTIFICATION_ACTIONBAR_DURATION);
+					if (seconds > 3) {
+						// Vanilla action bar displays for 3 seconds, so we shouldn't bother with any scheduling.
+						// Cancel any older tasks running to prevent them from leaking over.
+						if (playerActionTasks.get(player) != null) {
+							Bukkit.getScheduler().cancelTask(playerActionTasks.get(player));
+							playerActionTasks.remove(player);
+						}
+				
+						final String message = msg;
+						AtomicInteger remainingSeconds = new AtomicInteger(seconds);
+						int taskID = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+							player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(message));
+							remainingSeconds.getAndDecrement();
+							
+							if (remainingSeconds.get() == 0 && playerActionTasks.containsKey(player)) {
 								Bukkit.getScheduler().cancelTask(playerActionTasks.get(player));
 								playerActionTasks.remove(player);
 							}
-					
-							final String message = msg;
-							AtomicInteger remainingSeconds = new AtomicInteger(seconds);
-							int taskID = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
-								player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(message));
-								remainingSeconds.getAndDecrement();
-								
-								if (remainingSeconds.get() == 0 && playerActionTasks.containsKey(player)) {
-									Bukkit.getScheduler().cancelTask(playerActionTasks.get(player));
-									playerActionTasks.remove(player);
-								}
-							}, 0, 20L).getTaskId();
-							
-							playerActionTasks.put(player, taskID);
-						} else {						
-							player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(msg));
-						}
-					} else {
-						player.sendMessage(msg);
+						}, 0, 20L).getTaskId();
+						
+						playerActionTasks.put(player, taskID);
+					} else {						
+						player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(msg));
 					}
+				} else {
+					player.sendMessage(msg);
 				}
 			}
-		} catch (NotRegisteredException e) {
-			// likely Citizens' NPC
 		}
 
 		if (plugin.hasPlayerMode(player, "plotborder")) {
@@ -146,10 +143,9 @@ public class TownyCustomListener implements Listener {
 	 */
 	@EventHandler(priority = EventPriority.NORMAL) 
 	public void onBedExplodeEvent(BedExplodeEvent event) {
-		TownyWorld world = null;
-		try {
-			world = TownyUniverse.getInstance().getDataSource().getWorld(event.getLocation().getWorld().getName());
-		} catch (NotRegisteredException ignored) {}
+		TownyWorld world = TownyAPI.getInstance().getTownyWorld(event.getLocation().getWorld().getName());
+		if (world == null)
+			return;
 		
 		world.addBedExplosionAtBlock(event.getLocation(), event.getMaterial());
 		if (event.getLocation2() != null);

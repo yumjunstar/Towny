@@ -2,7 +2,6 @@ package com.palmergames.bukkit.towny.listeners;
 
 import com.palmergames.bukkit.towny.Towny;
 import com.palmergames.bukkit.towny.TownyAPI;
-import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.event.executors.TownyActionEventExecutor;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.TownBlock;
@@ -240,10 +239,7 @@ public class TownyBlockListener implements Listener {
 		if (!TownyAPI.getInstance().isTownyWorld(event.getBlock().getWorld()))
 			return;
 		
-		TownyWorld townyWorld = null;
-		try {
-			townyWorld = TownyUniverse.getInstance().getDataSource().getWorld(event.getBlock().getLocation().getWorld().getName());			
-		} catch (NotRegisteredException ignored) {}
+		TownyWorld townyWorld = TownyAPI.getInstance().getTownyWorld(event.getBlock().getLocation().getWorld().getName());
 
 		Material material = event.getBlock().getType();
 		/*

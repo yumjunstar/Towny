@@ -40,6 +40,7 @@ public class TownyExplodingBlocksEvent extends Event {
 	 * @param townyFilteredList - List of Blocks Towny has already filtered, these blocks will explode unless {@link #setBlockList(List)} is used.
 	 * @param mat - Material which caused the block explosion or null if it is an entity explosion.
 	 * @param entity - Entity which caused the entity explosion or null if it is a block explosion. 
+	 * @param bukkitExplodeEvent - Bukkit Event which caused the explosion.
 	 */
 	public TownyExplodingBlocksEvent(List<Block> vanillaBlockList, List<Block> townyFilteredList, Material mat, Entity entity, Event bukkitExplodeEvent) {
 		this.vanillaBlockList = vanillaBlockList;

@@ -104,10 +104,7 @@ public class TownyWorldListener implements Listener {
 		if (!TownyAPI.getInstance().isTownyWorld(event.getWorld()))
 			return;
 
-		TownyWorld townyWorld = null;
-		try {
-			townyWorld = TownyUniverse.getInstance().getDataSource().getWorld(event.getLightning().getWorld().getName());
-		} catch (NotRegisteredException ignored) {}
+		TownyWorld townyWorld = TownyAPI.getInstance().getTownyWorld(event.getLightning().getWorld().getName());
 
 		if (townyWorld != null && event.getCause().equals(LightningStrikeEvent.Cause.TRIDENT)) {
 			event.setCancelled(CombatUtil.preventPvP(townyWorld, TownyAPI.getInstance().getTownBlock(event.getLightning().getLocation())));

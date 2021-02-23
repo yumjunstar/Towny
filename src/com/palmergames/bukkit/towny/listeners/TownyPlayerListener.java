@@ -703,10 +703,7 @@ public class TownyPlayerListener implements Listener {
 			
 			// Caught players are tested for pvp at the location of the catch.
 			if (caught.getType().equals(EntityType.PLAYER)) {
-				TownyWorld world = null;
-				try {
-					world = TownyUniverse.getInstance().getDataSource().getWorld(event.getCaught().getWorld().getName());
-				} catch (NotRegisteredException ignored) {}
+				TownyWorld world = TownyAPI.getInstance().getTownyWorld(event.getCaught().getWorld().getName());
 				assert world != null;
 				TownBlock tb = TownyAPI.getInstance().getTownBlock(event.getCaught().getLocation());
 				test = !CombatUtil.preventPvP(world, tb);
@@ -856,10 +853,9 @@ public class TownyPlayerListener implements Listener {
 
 			Resident resident = TownyUniverse.getInstance().getResident(player.getUniqueId());
 			if (resident != null && resident.hasTown() && !keepInventory) {
-				Town town = null;
+				Town town = TownyAPI.getInstance().getResidentTownOrNull(resident);
 				Town tbTown = null;
 				try {
-					town = resident.getTown();
 					tbTown = tb.getTown();
 				} catch (NotRegisteredException ignored) {}
 				if (TownySettings.getKeepInventoryInOwnTown() && tbTown.equals(town)) {

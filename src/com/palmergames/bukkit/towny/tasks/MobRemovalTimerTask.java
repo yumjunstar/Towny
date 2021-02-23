@@ -3,9 +3,7 @@ package com.palmergames.bukkit.towny.tasks;
 import com.palmergames.bukkit.towny.Towny;
 import com.palmergames.bukkit.towny.TownyAPI;
 import com.palmergames.bukkit.towny.TownySettings;
-import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.event.MobRemovalEvent;
-import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.*;
 import com.palmergames.bukkit.towny.utils.EntityTypeUtil;
 
@@ -58,20 +56,14 @@ public class MobRemovalTimerTask extends TownyTimerTask {
 		List<LivingEntity> livingEntitiesToRemove = new ArrayList<>();
 
 		for (World world : server.getWorlds()) {
-			TownyWorld townyWorld;
+			
 
-			// Filter worlds not registered
-			try {
-				townyWorld = TownyUniverse.getInstance().getDataSource().getWorld(world.getName());
-			} catch (NotRegisteredException | NullPointerException e) {
-				// World was not registered by Towny, so we skip all mobs in it.
-				continue;
-			} // Spigot has unloaded this world.
-			
-			
 			// Filter worlds not using towny.
-			if (!townyWorld.isUsingTowny())
+			if (!TownyAPI.getInstance().isTownyWorld(world))
 				continue;
+			
+			// Filter worlds not registered
+			TownyWorld townyWorld = TownyAPI.getInstance().getTownyWorld(world.getName());
 
 			// Filter worlds that will always pass all checks in a world, regardless of possible conditions.
 			if (townyWorld.isForceTownMobs() && townyWorld.hasWorldMobs())

@@ -1,10 +1,10 @@
 package com.palmergames.bukkit.towny.regen;
 
 import com.palmergames.bukkit.towny.Towny;
+import com.palmergames.bukkit.towny.TownyAPI;
 import com.palmergames.bukkit.towny.TownySettings;
 import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.event.actions.TownyExplodingBlocksEvent;
-import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.object.TownBlock;
 import com.palmergames.bukkit.towny.object.TownyWorld;
 import com.palmergames.bukkit.towny.object.WorldCoord;
@@ -74,12 +74,11 @@ public class TownyRegenAPI {
 	 * @return list - List<WorldCoord> matched to above world.
 	 */
 	private static List<WorldCoord> getWorldCoords(TownyWorld world) {
+		
 		List<WorldCoord> list = new ArrayList<>();
 		for (WorldCoord wc : worldCoords) {
-			try {
-				if (wc.getTownyWorld().equals(world))
-					list.add(wc);
-			} catch (NotRegisteredException ignored) {}
+			if (wc.getWorldName().equals(world.getName()))
+				list.add(wc);
 		}		
 		return list;
 	}
@@ -431,21 +430,11 @@ public class TownyRegenAPI {
 	 */
 	public static void doDeleteTownBlockIds(WorldCoord worldCoord) {
 
-		//Block block = null;
-		World world = null;
+		TownyWorld townyWorld = TownyAPI.getInstance().getTownyWorld(worldCoord.getWorldName());
+		World world = worldCoord.getBukkitWorld();
 		int plotSize = TownySettings.getTownBlockSize();
 
-		//TownyMessaging.sendDebugMsg("Processing deleteTownBlockIds");
-
-		world = worldCoord.getBukkitWorld();
-
-		if (world != null) {
-			/*
-			 * if
-			 * (!world.isChunkLoaded(MinecraftTools.calcChunk(townBlock.getX()),
-			 * MinecraftTools.calcChunk(townBlock.getZ())))
-			 * return;
-			 */
+		if (world != null && townyWorld != null) {
 			int height = world.getMaxHeight() - 1;
 			int worldx = worldCoord.getX() * plotSize, worldz = worldCoord.getZ() * plotSize;
 
@@ -453,17 +442,12 @@ public class TownyRegenAPI {
 				for (int x = 0; x < plotSize; x++)
 					for (int y = height; y > 0; y--) { //Check from bottom up else minecraft won't remove doors
 						Block block = world.getBlockAt(worldx + x, y, worldz + z);
-						try {
-							if (worldCoord.getTownyWorld().isPlotManagementDeleteIds(block.getType().name())) {
-								block.setType(Material.AIR);
-							}
-						} catch (NotRegisteredException e) {
-							// Not a registered world
-						}
+						if (townyWorld.isPlotManagementDeleteIds(block.getType().name()))
+							block.setType(Material.AIR);
+
 						block = null;
 					}
 		}
-
 	}
 
 	/**
@@ -511,7 +495,7 @@ public class TownyRegenAPI {
 	 * @param block - {@link Block} which is being exploded.
 	 * @param count - int for setting the delay to do one block at a time.
 	 * @param world - {@link TownyWorld} for where the regen is being triggered.
-	 * @param event 
+	 * @param event - Bukkit event which caused the explosion.
 	 * 
 	 * @return true if the protectiontask was begun successfully. 
 	 */
