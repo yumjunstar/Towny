@@ -107,9 +107,8 @@ public class CombatUtil {
 	 * @param attackingPlayer - Player attacking
 	 * @param defendingPlayer - Player defending
 	 * @return true if we should cancel.
-	 * @throws NotRegisteredException - Generic NotRegisteredException
 	 */
-	private static boolean preventDamageCall(Towny plugin, TownyWorld world, Entity attackingEntity, Entity defendingEntity, Player attackingPlayer, Player defendingPlayer) throws NotRegisteredException {
+	private static boolean preventDamageCall(Towny plugin, TownyWorld world, Entity attackingEntity, Entity defendingEntity, Player attackingPlayer, Player defendingPlayer) {
 
 		TownBlock defenderTB = TownyAPI.getInstance().getTownBlock(defendingEntity.getLocation());
 		TownBlock attackerTB = TownyAPI.getInstance().getTownBlock(attackingEntity.getLocation());
@@ -324,11 +323,7 @@ public class CombatUtil {
 	 */
 	@Deprecated
 	public static boolean preventFriendlyFire(Player attacker, Player defender) {
-		TownyWorld world = null;
-		try {
-			world = TownyUniverse.getInstance().getDataSource().getWorld(attacker.getLocation().getWorld().getName());
-		} catch (NotRegisteredException ignored) {}
-		return preventFriendlyFire(attacker, defender, world);
+		return preventFriendlyFire(attacker, defender, TownyAPI.getInstance().getTownyWorld(attacker.getWorld().getName()));
 	}
 	
 	/**
@@ -415,17 +410,7 @@ public class CombatUtil {
 		if (residentA == null || residentB == null || !residentA.hasTown() || !residentB.hasTown())
 			return false;
 		
-		try {
-			if (residentA.getTown().equals(residentB.getTown()))
-				return true;
-			
-			if (residentA.getTown().getNation().equals(residentB.getTown().getNation()))
-				return true;
-			
-			if (residentA.getTown().getNation().hasAlly(residentB.getTown().getNation()))
-				return true;
-		} catch (NotRegisteredException ignored) {}
-		return false;
+		return isAlly(TownyAPI.getInstance().getResidentTownOrNull(residentA), TownyAPI.getInstance().getResidentTownOrNull(residentB));
 	}
 
 	/**
@@ -437,14 +422,12 @@ public class CombatUtil {
 	 */
 	public static boolean isAlly(Town a, Town b) {
 
-		try {
-			if (a == b)
-				return true;
-			if (a.getNation() == b.getNation())
-				return true;
-			if (a.getNation().hasAlly(b.getNation()))
-				return true;
-		} catch (NotRegisteredException ignored) {}
+		if (isSameTown(a, b))
+			return true;
+		if (isSameNation(a, b))
+			return true;
+		if (a.hasNation() && b.hasNation() && TownyAPI.getInstance().getTownNationOrNull(a).hasAlly(TownyAPI.getInstance().getTownNationOrNull(b)))
+			return true;
 		return false;
 	}
 
@@ -457,14 +440,10 @@ public class CombatUtil {
 	 */
 	public static boolean isSameNation(Town a, Town b) {
 
-		try {
-			if (a == b)
-				return true;
-			if (a.getNation() == b.getNation())
-				return true;
-		} catch (NotRegisteredException e) {
-			return false;
-		}
+		if (isSameTown(a, b))
+			return true;
+		if (a.hasNation() && b.hasNation() && TownyAPI.getInstance().getTownNationOrNull(a).equals(TownyAPI.getInstance().getTownNationOrNull(b)))
+			return true;
 		return false;
 	}
 
@@ -477,9 +456,7 @@ public class CombatUtil {
 	 */
 	public static boolean isSameTown(Town a, Town b) {
 
-		if (a == b)
-			return true;
-		return false;
+		return a.equals(b);
 	}
 
 	/**
@@ -492,17 +469,8 @@ public class CombatUtil {
 	public static boolean isSameNation(Resident a, Resident b) {
 		if (!a.hasTown() || !b.hasTown())
 			return false;
-		
-		Town townA = null;
-		Town townB = null;
-		try {
-			townA = a.getTown();
-			townB = b.getTown();
-		} catch (NotRegisteredException e) {
-			return false;
-		}
 				
-		return isSameNation(townA, townB);
+		return isSameNation(TownyAPI.getInstance().getResidentTownOrNull(a), TownyAPI.getInstance().getResidentTownOrNull(b));
 	}
 	
 	
@@ -515,17 +483,8 @@ public class CombatUtil {
 	public static boolean isSameTown(Resident a, Resident b) {
 		if (!a.hasTown() || !b.hasTown())
 			return false;
-		
-		Town townA = null;
-		Town townB = null;
-		try {
-			townA = a.getTown();
-			townB = b.getTown();
-		} catch (NotRegisteredException e) {
-			return false;
-		}
-		
-		return isSameTown(townA, townB);
+
+		return isSameTown(TownyAPI.getInstance().getResidentTownOrNull(a), TownyAPI.getInstance().getResidentTownOrNull(b));
 	}
 
 	/**
@@ -541,21 +500,19 @@ public class CombatUtil {
 		Resident residentB = townyUniverse.getResident(b);
 		
 		// Fast-fail
-		if (residentA == null || residentB == null || !residentA.hasTown() || !residentB.hasTown())
+		if (residentA == null || residentB == null || !residentA.hasNation() || !residentB.hasNation())
 			return false;
-		
-		try {
-			if (residentA.getTown().equals(residentB.getTown()))
-				return false;
-			if (residentA.getTown().getNation().equals(residentB.getTown().getNation()))
-				return false;
-			Nation nationA = residentA.getTown().getNation();
-			Nation nationB = residentB.getTown().getNation();
-			if (nationA.isNeutral() || nationB.isNeutral())
-				return false;
-			if (nationA.hasEnemy(nationB))
-				return true;
-		} catch (NotRegisteredException ignored) {}
+		if (isSameTown(residentA, residentB))
+			return false;
+		if (isSameNation(residentA, residentB))
+			return false;
+
+		Nation nationA = TownyAPI.getInstance().getTownNationOrNull(TownyAPI.getInstance().getResidentTownOrNull(residentA));
+		Nation nationB = TownyAPI.getInstance().getTownNationOrNull(TownyAPI.getInstance().getResidentTownOrNull(residentB));
+		if (nationA.isNeutral() || nationB.isNeutral())
+			return false;
+		if (nationA.hasEnemy(nationB))
+			return true;
 		return false;
 	}
 
@@ -589,17 +546,12 @@ public class CombatUtil {
 		Resident residentA = townyUniverse.getResident(a);
 		Resident residentB = townyUniverse.getResident(b);
 		
+		// Fast fail.
 		if (residentA == null || residentB == null || !residentA.hasNation() || !residentB.hasNation())
 			return false;
-		
-		try {
-			if (residentA.getTown().equals(residentB.getTown()))
-				return false;
-			if (residentA.getTown().getNation().equals(residentB.getTown().getNation()))
-				return false;
-			if (residentA.getTown().getNation().hasEnemy(residentB.getTown().getNation()))
-				return true;
-		} catch (NotRegisteredException ignored) {}
+
+		if (isEnemy(TownyAPI.getInstance().getResidentTownOrNull(residentA), TownyAPI.getInstance().getResidentTownOrNull(residentB)))
+			return true;
 		return false;
 	}
 
@@ -612,14 +564,15 @@ public class CombatUtil {
 	 */
 	public static boolean isEnemy(Town a, Town b) {
 
-		try {
-			if (a == b)
-				return false;
-			if (a.getNation() == b.getNation())
-				return false;
-			if (a.getNation().hasEnemy(b.getNation()))
-				return true;
-		} catch (NotRegisteredException ignored) {}
+		if (!a.hasNation() || !b.hasNation())
+			return false;
+		
+		if (isSameTown(a, b))
+			return false;
+		if (isSameNation(a, b))
+			return false;
+		if (TownyAPI.getInstance().getTownNationOrNull(a).hasEnemy(TownyAPI.getInstance().getTownNationOrNull(b)))
+			return true;
 		return false;
 	}
 
@@ -634,7 +587,7 @@ public class CombatUtil {
 		Resident resident = TownyUniverse.getInstance().getResident(player.getUniqueId());
 		try {
 			if (resident != null && resident.hasTown())
-				return CombatUtil.isEnemy(resident.getTown(), worldCoord.getTownBlock().getTown());
+				return CombatUtil.isEnemy(TownyAPI.getInstance().getResidentTownOrNull(resident), worldCoord.getTownBlock().getTown());
 		} catch (NotRegisteredException ignored) {}
 		return false;
 	}
