@@ -728,7 +728,8 @@ public class PlotCommand extends BaseCommand implements CommandExecutor {
 								}
 							}
 							return true;
-						}						
+						}
+						
 						/*
 						 * After trying all of the other /plot set subcommands, attempt to set the townblock type.
 						 */
