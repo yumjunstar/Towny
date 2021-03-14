@@ -1200,13 +1200,9 @@ public class NationCommand extends BaseCommand implements CommandExecutor {
 		nation.setMapColorHexCode(MapUtil.generateRandomNationColourAsHexCode());
 		town.setNation(nation);
 		nation.setCapital(town);
-		if (TownyEconomyHandler.isActive()) {
-			try {
-				nation.getAccount().setBalance(0, "New Nation Account");
-			} catch (EconomyException e) {
-				e.printStackTrace();
-			}
-		}
+		if (TownyEconomyHandler.isActive())
+			nation.getAccount().setBalance(0, "New Nation Account");
+			
 		town.save();
 		nation.save();
 
