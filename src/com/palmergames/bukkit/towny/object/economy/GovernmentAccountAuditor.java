@@ -3,7 +3,6 @@ package com.palmergames.bukkit.towny.object.economy;
 import java.util.ArrayList;
 import java.util.List;
 import com.palmergames.bukkit.towny.TownyEconomyHandler;
-import com.palmergames.bukkit.towny.exceptions.EconomyException;
 import com.palmergames.bukkit.towny.object.TransactionType;
 
 public class GovernmentAccountAuditor implements AccountAuditor {
@@ -12,16 +11,12 @@ public class GovernmentAccountAuditor implements AccountAuditor {
 	
 	@Override
 	public void withdrew(Account account, double amount, String reason) {
-		try {
-			transactions.add(new BankTransaction(TransactionType.WITHDRAW, System.currentTimeMillis(), account, amount, account.getHoldingBalance(), reason));
-		} catch (EconomyException ignored) {}
+		transactions.add(new BankTransaction(TransactionType.WITHDRAW, System.currentTimeMillis(), account, amount, account.getHoldingBalance(), reason));
 	}
 
 	@Override
 	public void deposited(Account account, double amount, String reason) {
-		try {
-			transactions.add(new BankTransaction(TransactionType.DEPOSIT, System.currentTimeMillis(), account, amount, account.getHoldingBalance(), reason));
-		} catch (EconomyException ignored) {}
+		transactions.add(new BankTransaction(TransactionType.DEPOSIT, System.currentTimeMillis(), account, amount, account.getHoldingBalance(), reason));
 	}
 
 	@Override
