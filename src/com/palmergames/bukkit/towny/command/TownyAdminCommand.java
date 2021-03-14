@@ -16,7 +16,6 @@ import com.palmergames.bukkit.towny.event.NationPreRenameEvent;
 import com.palmergames.bukkit.towny.event.TownPreRenameEvent;
 import com.palmergames.bukkit.towny.event.TownyLoadedDatabaseEvent;
 import com.palmergames.bukkit.towny.exceptions.AlreadyRegisteredException;
-import com.palmergames.bukkit.towny.exceptions.EconomyException;
 import com.palmergames.bukkit.towny.exceptions.InvalidMetadataTypeException;
 import com.palmergames.bukkit.towny.exceptions.InvalidNameException;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
@@ -1171,7 +1170,7 @@ public class TownyAdminCommand extends BaseCommand implements CommandExecutor {
 				return;
 			}
 
-		} catch (TownyException | EconomyException e) {
+		} catch (TownyException e) {
 			TownyMessaging.sendErrorMsg(getSender(), e.getMessage());
 		}
 		
@@ -1483,7 +1482,7 @@ public class TownyAdminCommand extends BaseCommand implements CommandExecutor {
 				}
 			}
 
-		} catch (NotRegisteredException | AlreadyRegisteredException | InvalidNameException | EconomyException e) {
+		} catch (NotRegisteredException | AlreadyRegisteredException | InvalidNameException e) {
 			TownyMessaging.sendErrorMsg(getSender(), e.getMessage());
 		}
 	}
