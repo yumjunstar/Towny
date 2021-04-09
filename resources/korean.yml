@@ -1040,11 +1040,11 @@ msg_new_town_advice: '마을을 생성하신 것을 축하합니다! 현재 당�
 msg_err_teleport_cancelled_damage: '공격을 받아서 이동이 취소되었습니다.'
 
 # Added in 0.82
-invitation_prefix: "&8[&7Invitation&8] &9"
-confirmation_prefix: "&8[&7Confirmation&8] &9"
-this_message_will_expire2: '&9This will auto-expire in 20 seconds'
-msg_hover_next_page: 'Next Page'
-msg_hover_previous_page: 'Previous Page'
+invitation_prefix: "&8[&7초대&8] &9"
+confirmation_prefix: "&8[&7확인&8] &9"
+this_message_will_expire2: '&20초 안에 이 메세지가 만료됩니다.'
+msg_hover_next_page: '다음 페이지'
+msg_hover_previous_page: '이전 페이지'
 
 # Added in 0.83
 msg_max_tax_amount_only_for_percent: "Max tax amounts can only be set for towns with tax percentages."
@@ -1058,8 +1058,8 @@ msg_set_perms_reset_single: '&bSuccessfully reset permissions on this plot.'
 
 #Added in 0.86
 status_bank_bankrupt: '&2Bank: &a%s &c(BANKRUPT)'
-msg_warning_bankrupt: '&4*** WARNING, %s WILL GO BANKRUPT AT NEXT NEW DAY DUE TO LACK OF FUNDS ***'
-msg_town_bankrupt_by_upkeep: '&b%s could not afford its upkeep and has gone bankrupt.'
+msg_warning_bankrupt: '&4*** 경고, %s 가 돈이 없어 다음 새 날에 파산됩니다. ***'
+msg_town_bankrupt_by_upkeep: '&b%s 가 유지비를 감당 할 수 없어 파산되었습니다.'
 msg_town_bankrupt_by_upkeep_multiple: '&bThe following towns could not afford their upkeep and have gone bankrupt: '
 msg_town_bankrupt_by_nation_tax: '&b%s couldn''t pay the %s tax and has gone bankrupt.'
 msg_town_bankrupt_by_nation_tax_multiple:  '&bThe following towns could not afford the nation tax and have gone bankrupt: '
@@ -1140,11 +1140,11 @@ msg_status_npc: '&c%s is not an real player, and is limited to Towny only.'
 npc_created: '&2Created: &a%s'
 msg_no_funds_claim_plot: '&cYou cannot afford to claim the plot costing %s.'
 msg_no_funds_claim_plot_group: '&cYou cannot afford to claim the %s plots costing %s.'
-status_town_title_peaceful: '&b(Peacful)'
+status_town_title_peaceful: '&b(평화로움)'
 
 #Added in 0.95
-status_public: '&b(Public)'
-msg_days: ' days'
+status_public: '&b(공공의)'
+msg_days: ' 일'
 msg_comptype_public: 'Public Status'
 towny_prices_title: 'Prices'
 towny_prices_town_nation: '&e[New] &2Town: &a%s &8| &2Nation: &a%s'
